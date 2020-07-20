@@ -22,17 +22,17 @@
     >
       <image 
         class="avatar"
-        src="{{item.avatar}}"
+        src="{{item.user_info.avatarUrl}}"
         mode="scaleToFill"
       ></image> 
       <view class="main">
-        <view class="nickname">{{item.nickName}}</view>
-        <block wx:if="{{item.msgType === 'image'}}">
+        <view class="nickname">{{item.user_info.nickName}}</view>
+        <block wx:if="{{item.type === 'image'}}">
           <view class="image-wrapper">
             <view class="loading" wx:if="{{item.writeStatus > -1}}">{{item.writeStatus}}%</view>
             <image 
-              src="{{item.tempFilePath || item.imgFileID}}" 
-              data-fileid="{{item.tempFilePath || item.imgFileID}}" 
+              src="{{item.tempFilePath || item.image_id}}" 
+              data-fileid="{{item.tempFilePath || item.image_id}}" 
               class="image-content" 
               style="{{item.imgStyle}}"
               mode="scallToFill" 
@@ -42,7 +42,7 @@
         <block wx:else>
           <view class="text-wrapper">
             <view class="loading" wx:if="{{item.writeStatus === 'pending'}}">···</view>
-            <view class="text-content">{{item.textContent}}</view>
+            <view class="text-content">{{item.content}}</view>
           </view>
         </block>
       </view>

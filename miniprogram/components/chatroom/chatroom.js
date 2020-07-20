@@ -4,12 +4,19 @@ const SETDATA_SCROLL_TO_BOTTOM = {
   scrollWithAnimation: true,
 }
 
+const COLLECTIONS = {
+  chat: 'chat',
+  room: 'room',
+  connection: 'connection'
+}
+
+const watchers = {}
+
+const getRandomId = () => `${Math.random()}_${Date.now()}`
+
 Component({
   properties: {
     envId: String,
-    collection: String,
-    groupId: String,
-    groupName: String,
     userInfo: Object,
     onGetUserInfo: {
       type: Function,
@@ -20,12 +27,13 @@ Component({
   },
 
   data: {
+    connection: {},
     chats: [],
     textInputValue: '',
     openId: '',
     scrollTop: 0,
     scrollToMessage: '',
-    hasKeyboard: false,
+    hasKeyboard: false
   },
 
   methods: {
@@ -37,36 +45,200 @@ Component({
       return this.properties.getOpenID() 
     },
 
-    mergeCommonCriteria(criteria) {
-      return {
-        groupId: this.data.groupId,
-        ...criteria,
-      }
-    },
-
-    async initRoom() {
+    async initConnection() {
       this.try(async () => {
         await this.initOpenID()
 
-        const { envId, collection } = this.properties
+        const { envId } = this.properties
         const db = this.db = wx.cloud.database({
           env: envId,
         })
         const _ = db.command
 
-        const { data: initList } = await db.collection(collection).where(this.mergeCommonCriteria()).orderBy('sendTimeTS', 'desc').get()
+        const { data: [my_connection] } = await db.collection(COLLECTIONS.connection).where({_openid: this.data.openId}).get()
 
-        console.log('init query chats', initList)
+        let connection = {}
+        if (my_connection) {
+          connection.status = 1
+          connection.openid_other = null
+          connection.status_change_time = null
+          connection.roomid = null
+          db.collection(COLLECTIONS.connection).doc(my_connection._id).update({
+            data: connection
+          })
+          connection = Object.assign(my_connection, connection)
+        } else {
+          connection = {
+            _id: getRandomId(),
+            status: 1,
+            openid_other: null,
+            status_change_time: null,
+            roomid: null
+          }
+          db.collection(COLLECTIONS.connection).add({
+            data: connection
+          })
+          connection._openid = this.data.openId
+        }
+
+        this.setData({ connection })
+
+        this.addWatcher(
+          COLLECTIONS.connection,
+          { _openid: this.data.openId },
+          this.onConnectionChange.bind(this)
+        )
+      }, '初始化失败')
+    },
+
+    onConnectionChange(snapshot) {
+      if (snapshot.type === 'init') {
+        this.inited = true
+      } else {
+        for (const docChange of snapshot.docChanges) {
+          if (docChange.queueType === 'update') {
+            const { connection } = this.data
+            if (connection.status !== docChange.doc.status) {
+              if (connection.status !== 3 && docChange.doc.status === 3) {
+                // 进入房间
+                this.addWatcher(
+                  COLLECTIONS.chat,
+                  { roomid: this.data.connection.roomid },
+                  this.onChatChange.bind(this)
+                )
+              } else if (connection.status === 3 && docChange.doc.status === 1) {
+                // 对方离开房间
+                if (watchers[COLLECTIONS.chat]) {
+                  watchers[COLLECTIONS.chat].close()
+                }
+              }
+              this.setData({
+                connection: docChange.doc
+              })
+            }
+            break
+          }
+        }
+      }
+    },
+
+    onChatChange(snapshot) {
+      if (snapshot.type === 'init') {
+        this.scrollToBottom()
+      } else {
+        let hasNewMessage = false
+        let hasOthersMessage = false
+        const chats = [...this.data.chats]
+        for (const docChange of snapshot.docChanges) {
+          switch (docChange.queueType) {
+            case 'enqueue': {
+              hasOthersMessage = docChange.doc._openid !== this.data.openId
+              const index = chats.findIndex(chat => chat._id === docChange.doc._id)
+              if (index > -1) {
+                if (chats[index].type === 'image' && chats[index].tempFilePath) {
+                  chats.splice(index, 1, {
+                    ...docChange.doc,
+                    tempFilePath: chats[index].tempFilePath,
+                  })
+                } else chats.splice(index, 1, docChange.doc)
+              } else {
+                hasNewMessage = true
+                chats.push(docChange.doc)
+              }
+              break
+            }
+          }
+        }
+        this.setData({
+          chats: chats.sort((x, y) => y.send_time - x.send_time),
+        })
+        if (hasOthersMessage || hasNewMessage) {
+          this.scrollToBottom()
+        }
+      }
+    },
+
+    async prepareJoinRoom() {
+      this.try(async () => {
+        const db = this.db
+        const _ = db.command
+
+        const { data: [my_connection] } = await db.collection(COLLECTIONS.connection).where({_openid: this.data.openId}).get()
+        const { data: list } = await db.collection(COLLECTIONS.connection).where({status: 2}).get()
+        const { connection, openId } = this.data
+
+        if (list.length) {
+          list.sort((x, y) => x.status_change_time - y.status_change_time)
+          connection.status = 3
+          connection.openid_other = list[0]._openid
+          connection.status_change_time = null
+          connection.roomid =  getRandomId()
+          db.collection(COLLECTIONS.room).add({
+            data: {
+              _id: connection.roomid,
+              openid_1: openId,
+              openid_2: list[0]._openid
+            }
+          })
+          db.collection(COLLECTIONS.connection).doc(my_connection._id).update({
+            data: {
+              status: connection.status,
+              openid_other: connection.openid_other,
+              status_change_time: connection.status_change_time,
+              roomid: connection.roomid
+            }
+          })
+          db.collection(COLLECTIONS.connection).doc(list[0]._id).update({
+            data: {
+              status: connection.status,
+              openid_other: openId,
+              status_change_time: null,
+              roomid: connection.roomid
+            }
+          })
+        } else {
+          connection.status = 2
+          connection.status_change_time = Date.now()
+          db.collection(COLLECTIONS.connection).doc(my_connection._id).update({
+            data: {
+              status: connection.status,
+              status_change_time: connection.status_change_time
+            }
+          })
+        }
 
         this.setData({
-          chats: initList.reverse(),
-          scrollTop: 10000,
+          connection
         })
-
-        this.initWatch(initList.length ? {
-          sendTimeTS: _.gt(initList[initList.length - 1].sendTimeTS),
-        } : {})
       }, '初始化失败')
+    },
+
+    async addWatcher(collection, criteria, onChange) {
+      this.try(() => {
+        const db = this.db
+        const _ = db.command
+
+        console.warn(`开始监听`, collection, criteria)
+        if (watchers[collection]) {
+          watchers[collection].close()
+        }
+        watchers[collection] = db.collection(collection).where(criteria).watch({
+          onChange,
+          onError: e => {
+            // if (!this.inited || this.fatalRebuildCount >= FATAL_REBUILD_TOLERANCE) {
+            //   this.showError(this.inited ? '监听错误，已断开' : '初始化监听失败', e, '重连', () => {
+            //     this.initWatch(this.data.chats.length ? {
+            //       sendTimeTS: _.gt(this.data.chats[this.data.chats.length - 1].sendTimeTS),
+            //     } : {})
+            //   })
+            // } else {
+            //   this.initWatch(this.data.chats.length ? {
+            //     sendTimeTS: _.gt(this.data.chats[this.data.chats.length - 1].sendTimeTS),
+            //   } : {})
+            // }
+          },
+        })
+      }, '初始化监听失败')
     },
 
     async initOpenID() {
@@ -79,104 +251,32 @@ Component({
       }, '初始化 openId 失败')
     },
 
-    async initWatch(criteria) {
-      this.try(() => {
-        const { collection } = this.properties
-        const db = this.db
-        const _ = db.command
-
-        console.warn(`开始监听`, criteria)
-        this.messageListener = db.collection(collection).where(this.mergeCommonCriteria(criteria)).watch({
-          onChange: this.onRealtimeMessageSnapshot.bind(this),
-          onError: e => {
-            if (!this.inited || this.fatalRebuildCount >= FATAL_REBUILD_TOLERANCE) {
-              this.showError(this.inited ? '监听错误，已断开' : '初始化监听失败', e, '重连', () => {
-                this.initWatch(this.data.chats.length ? {
-                  sendTimeTS: _.gt(this.data.chats[this.data.chats.length - 1].sendTimeTS),
-                } : {})
-              })
-            } else {
-              this.initWatch(this.data.chats.length ? {
-                sendTimeTS: _.gt(this.data.chats[this.data.chats.length - 1].sendTimeTS),
-              } : {})
-            }
-          },
-        })
-      }, '初始化监听失败')
-    },
-
-    onRealtimeMessageSnapshot(snapshot) {
-      console.warn(`收到消息`, snapshot)
-
-      if (snapshot.type === 'init') {
-        this.setData({
-          chats: [
-            ...this.data.chats,
-            ...[...snapshot.docs].sort((x, y) => x.sendTimeTS - y.sendTimeTS),
-          ],
-        })
-        this.scrollToBottom()
-        this.inited = true
-      } else {
-        let hasNewMessage = false
-        let hasOthersMessage = false
-        const chats = [...this.data.chats]
-        for (const docChange of snapshot.docChanges) {
-          switch (docChange.queueType) {
-            case 'enqueue': {
-              hasOthersMessage = docChange.doc._openid !== this.data.openId
-              const ind = chats.findIndex(chat => chat._id === docChange.doc._id)
-              if (ind > -1) {
-                if (chats[ind].msgType === 'image' && chats[ind].tempFilePath) {
-                  chats.splice(ind, 1, {
-                    ...docChange.doc,
-                    tempFilePath: chats[ind].tempFilePath,
-                  })
-                } else chats.splice(ind, 1, docChange.doc)
-              } else {
-                hasNewMessage = true
-                chats.push(docChange.doc)
-              }
-              break
-            }
-          }
-        }
-        this.setData({
-          chats: chats.sort((x, y) => x.sendTimeTS - y.sendTimeTS),
-        })
-        if (hasOthersMessage || hasNewMessage) {
-          this.scrollToBottom()
-        }
-      }
-    },
-
     async onConfirmSendText(e) {
       this.try(async () => {
         if (!e.detail.value) {
           return
         }
 
-        const { collection } = this.properties
         const db = this.db
         const _ = db.command
 
-        const doc = {
-          _id: `${Math.random()}_${Date.now()}`,
-          groupId: this.data.groupId,
-          avatar: this.data.userInfo.avatarUrl,
-          nickName: this.data.userInfo.nickName,
-          msgType: 'text',
-          textContent: e.detail.value,
-          sendTime: new Date(),
-          sendTimeTS: Date.now(), // fallback
+        const chat = {
+          _id: getRandomId(),
+          roomid: this.data.connection.roomid,
+          user_info: this.data.userInfo,
+          type: 'text',
+          content: e.detail.value,
+          send_time: Date.now()
         }
+
+        console.error(chat.user_info)
 
         this.setData({
           textInputValue: '',
           chats: [
             ...this.data.chats,
             {
-              ...doc,
+              ...chat,
               _openid: this.data.openId,
               writeStatus: 'pending',
             },
@@ -184,18 +284,18 @@ Component({
         })
         this.scrollToBottom(true)
 
-        await db.collection(collection).add({
-          data: doc,
+        await db.collection(COLLECTIONS.chat).add({
+          data: chat,
         })
 
         this.setData({
-          chats: this.data.chats.map(chat => {
-            if (chat._id === doc._id) {
+          chats: this.data.chats.map(v => {
+            if (v._id === chat._id) {
               return {
-                ...chat,
+                ...v,
                 writeStatus: 'written',
               }
-            } else return chat
+            } else return v
           }),
         })
       }, '发送文字失败')
@@ -206,22 +306,20 @@ Component({
         count: 1,
         sourceType: ['album', 'camera'],
         success: async res => {
-          const { envId, collection } = this.properties
-          const doc = {
-            _id: `${Math.random()}_${Date.now()}`,
-            groupId: this.data.groupId,
-            avatar: this.data.userInfo.avatarUrl,
-            nickName: this.data.userInfo.nickName,
-            msgType: 'image',
-            sendTime: new Date(),
-            sendTimeTS: Date.now(), // fallback
+          const { envId } = this.properties
+          const chat = {
+            _id: getRandomId(),
+            roomid: this.data.connection.roomid,
+            user_info: this.data.userInfo,
+            type: 'image',
+            send_time: Date.now()
           }
 
           this.setData({
             chats: [
               ...this.data.chats,
               {
-                ...doc,
+                ...chat,
                 _openid: this.data.openId,
                 tempFilePath: res.tempFilePaths[0],
                 writeStatus: 0,
@@ -238,10 +336,10 @@ Component({
             },
             success: res => {
               this.try(async () => {
-                await this.db.collection(collection).add({
+                await this.db.collection(COLLECTIONS.chat).add({
                   data: {
-                    ...doc,
-                    imgFileID: res.fileID,
+                    ...chat,
+                    image_id: res.fileID,
                   },
                 })
               }, '发送图片失败')
@@ -253,13 +351,13 @@ Component({
 
           uploadTask.onProgressUpdate(({ progress }) => {
             this.setData({
-              chats: this.data.chats.map(chat => {
-                if (chat._id === doc._id) {
+              chats: this.data.chats.map(v => {
+                if (v._id === chat._id) {
                   return {
-                    ...chat,
+                    ...v,
                     writeStatus: progress,
                   }
-                } else return chat
+                } else return v
               })
             })
           })
@@ -291,19 +389,19 @@ Component({
     },
 
     async onScrollToUpper() {
-      if (this.db && this.data.chats.length) {
-        const { collection } = this.properties
-        const _ = this.db.command
-        const { data } = await this.db.collection(collection).where(this.mergeCommonCriteria({
-          sendTimeTS: _.lt(this.data.chats[0].sendTimeTS),
-        })).orderBy('sendTimeTS', 'desc').get()
-        this.data.chats.unshift(...data.reverse())
-        this.setData({
-          chats: this.data.chats,
-          scrollToMessage: `item-${data.length}`,
-          scrollWithAnimation: false,
-        })
-      }
+      // if (this.db && this.data.chats.length) {
+      //   const { collection } = this.properties
+      //   const _ = this.db.command
+      //   const { data } = await this.db.collection(collection).where(this.mergeCommonCriteria({
+      //     sendTimeTS: _.lt(this.data.chats[0].sendTimeTS),
+      //   })).orderBy('sendTimeTS', 'desc').get()
+      //   this.data.chats.unshift(...data.reverse())
+      //   this.setData({
+      //     chats: this.data.chats,
+      //     scrollToMessage: `item-${data.length}`,
+      //     scrollWithAnimation: false,
+      //   })
+      // }
     },
 
     async try(fn, title) {
@@ -329,8 +427,6 @@ Component({
   },
 
   ready() {
-    global.chatroom = this
-    this.initRoom()
-    this.fatalRebuildCount = 0
+    this.initConnection()
   },
 })
