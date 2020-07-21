@@ -269,8 +269,6 @@ Component({
           send_time: Date.now()
         }
 
-        console.error(chat.user_info)
-
         this.setData({
           textInputValue: '',
           chats: [
@@ -278,11 +276,13 @@ Component({
             {
               ...chat,
               _openid: this.data.openId,
-              writeStatus: 'pending',
+              writeStatus: this.data.connection.status === 3 ? 'pending' : 'written',
             },
           ],
         })
         this.scrollToBottom(true)
+
+        if (this.data.connection.status !== 3) return
 
         await db.collection(COLLECTIONS.chat).add({
           data: chat,
