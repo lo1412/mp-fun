@@ -33,7 +33,8 @@ Component({
     openId: '',
     scrollTop: 0,
     scrollToMessage: '',
-    hasKeyboard: false
+    hasKeyboard: false,
+    count: 0
   },
 
   methods: {
@@ -101,11 +102,7 @@ Component({
             if (connection.status !== docChange.doc.status) {
               if (connection.status !== 3 && docChange.doc.status === 3) {
                 // 进入房间
-                this.addWatcher(
-                  COLLECTIONS.chat,
-                  { roomid: this.data.connection.roomid },
-                  this.onChatChange.bind(this)
-                )
+                this.joinRoom(docChange.doc.status.roomid)
               } else if (connection.status === 3 && docChange.doc.status === 1) {
                 // 对方离开房间
                 if (watchers[COLLECTIONS.chat]) {
@@ -123,6 +120,7 @@ Component({
     },
 
     onChatChange(snapshot) {
+      console.error(snapshot)
       if (snapshot.type === 'init') {
         this.scrollToBottom()
       } else {
@@ -130,8 +128,8 @@ Component({
         let hasOthersMessage = false
         const chats = [...this.data.chats]
         for (const docChange of snapshot.docChanges) {
-          switch (docChange.queueType) {
-            case 'enqueue': {
+          // switch (docChange.queueType) {
+          //   case 'enqueue': {
               hasOthersMessage = docChange.doc._openid !== this.data.openId
               const index = chats.findIndex(chat => chat._id === docChange.doc._id)
               if (index > -1) {
@@ -147,8 +145,8 @@ Component({
               }
               break
             }
-          }
-        }
+        //   }
+        // }
         this.setData({
           chats: chats.sort((x, y) => y.send_time - x.send_time),
         })
@@ -158,13 +156,23 @@ Component({
       }
     },
 
+    joinRoom(roomid) {
+      this.addWatcher(
+        COLLECTIONS.chat,
+        { roomid },
+        this.onChatChange.bind(this)
+      )
+    },
+
     async prepareJoinRoom() {
       this.try(async () => {
         const db = this.db
         const _ = db.command
 
-        const { data: [my_connection] } = await db.collection(COLLECTIONS.connection).where({_openid: this.data.openId}).get()
-        const { data: list } = await db.collection(COLLECTIONS.connection).where({status: 2}).get()
+        let { data: list } = await db.collection(COLLECTIONS.connection).where({
+          _openid: _.not(_.eq(this.data.openId)),
+          status: 2
+        }).get()
         const { connection, openId } = this.data
 
         if (list.length) {
@@ -180,7 +188,7 @@ Component({
               openid_2: list[0]._openid
             }
           })
-          db.collection(COLLECTIONS.connection).doc(my_connection._id).update({
+          db.collection(COLLECTIONS.connection).doc(connection._id).update({
             data: {
               status: connection.status,
               openid_other: connection.openid_other,
@@ -196,10 +204,11 @@ Component({
               roomid: connection.roomid
             }
           })
+          this.joinRoom(connection.roomid)
         } else {
           connection.status = 2
           connection.status_change_time = Date.now()
-          db.collection(COLLECTIONS.connection).doc(my_connection._id).update({
+          db.collection(COLLECTIONS.connection).doc(connection._id).update({
             data: {
               status: connection.status,
               status_change_time: connection.status_change_time
@@ -251,6 +260,32 @@ Component({
       }, '初始化 openId 失败')
     },
 
+    bot() {
+      setTimeout(() => {
+        const count = this.data.count + 1
+        this.setData({
+          count,
+          chats: [
+            ...this.data.chats,
+            {
+              _id: getRandomId(),
+              user_info: {
+                nickName: 'bot'
+              },
+              content: count === 1 ? '等待连接' : count,
+              send_time: Date.now()
+            },
+          ],
+        })
+
+        if (count > 0) {
+          this.prepareJoinRoom()
+        }
+
+        this.scrollToBottom(true)
+      }, 1000)
+    },
+
     async onConfirmSendText(e) {
       this.try(async () => {
         if (!e.detail.value) {
@@ -282,7 +317,7 @@ Component({
         })
         this.scrollToBottom(true)
 
-        if (this.data.connection.status !== 3) return
+        if (this.data.connection.status !== 3) return this.bot()
 
         await db.collection(COLLECTIONS.chat).add({
           data: chat,
