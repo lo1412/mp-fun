@@ -88,6 +88,11 @@ Component({
 
     },
 
+    addChat(chat) {
+      this.setData({ chats: [...this.data.chats, chat] })
+      this.scrollToBottom(true)
+    },
+
     async pullChat() {
       // 拉一条
       if (this.needComfort) {
@@ -103,7 +108,7 @@ Component({
           { content: _.eq(this.data.lastMood.content) }
         )
         if (res.data.length) {
-          this.setData({ chats: [...this.data.chats, res.data[0]] })
+          this.addChat(res.data[0])
           return
         }
 
@@ -115,7 +120,7 @@ Component({
             { key: _.eq(key) }
           )
           if (res.data.length) {
-            this.setData({ chats: [...this.data.chats, res.data[0]] })
+            this.addChat(res.data[0])
             return
           }
         }
@@ -128,7 +133,7 @@ Component({
         const _ = db.command
         const { data } = await this.aggregate(COLLECTIONS.mood)
         if (!data.length) return
-        this.setData({ chats: [...this.data.chats, data[0]] })
+        this.addChat(data[0])
       }
     },
 
@@ -140,7 +145,7 @@ Component({
         const db = this.db
         const _ = db.command
 
-        const key = await this.getKey()
+        const key = await (this.needComfort ? this.getKey() : this.data.chats.slice(-1)[0].key)
 
         if (!key) {
           this.bot()
@@ -161,12 +166,8 @@ Component({
           this.setData({ lastMood: chat })
         }
 
-        this.setData({
-          textInputValue: '',
-          chats: [...this.data.chats, chat]
-        })
-
-        this.scrollToBottom(true)
+        this.setData({ textInputValue: '' })
+        this.addChat(chat)
 
         this.count += 1
 
@@ -192,17 +193,6 @@ Component({
         watchers[collection] = db.collection(collection).where(criteria).watch({
           onChange,
           onError: e => {
-            // if (!this.inited || this.fatalRebuildCount >= FATAL_REBUILD_TOLERANCE) {
-            //   this.showError(this.inited ? '监听错误，已断开' : '初始化监听失败', e, '重连', () => {
-            //     this.initWatch(this.data.chats.length ? {
-            //       sendTimeTS: _.gt(this.data.chats[this.data.chats.length - 1].sendTimeTS),
-            //     } : {})
-            //   })
-            // } else {
-            //   this.initWatch(this.data.chats.length ? {
-            //     sendTimeTS: _.gt(this.data.chats[this.data.chats.length - 1].sendTimeTS),
-            //   } : {})
-            // }
           },
         })
       }, '初始化监听失败')
@@ -226,19 +216,6 @@ Component({
     },
 
     async onScrollToUpper() {
-      // if (this.db && this.data.chats.length) {
-      //   const { collection } = this.properties
-      //   const _ = this.db.command
-      //   const { data } = await this.db.collection(collection).where(this.mergeCommonCriteria({
-      //     sendTimeTS: _.lt(this.data.chats[0].sendTimeTS),
-      //   })).orderBy('sendTimeTS', 'desc').get()
-      //   this.data.chats.unshift(...data.reverse())
-      //   this.setData({
-      //     chats: this.data.chats,
-      //     scrollToMessage: `item-${data.length}`,
-      //     scrollWithAnimation: false,
-      //   })
-      // }
     },
 
     async try(fn, title) {
