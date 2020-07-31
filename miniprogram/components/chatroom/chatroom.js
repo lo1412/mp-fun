@@ -9,7 +9,7 @@ const COLLECTIONS = {
   comfort: 'comfort',
 }
 
-// mood: _id, _openid, mood, key, user_info, send_time
+// mood: _id, _openid, content, key, user_info, send_time
 // comfort: 同上
 
 const watchers = {}
@@ -34,7 +34,8 @@ Component({
     openId: '',
     scrollTop: 0,
     scrollToMessage: '',
-    count: 0
+    count: 0,
+    lastMood: null
   },
 
   ready() {
@@ -79,51 +80,90 @@ Component({
       })
     },
 
+    getKey(value = this.data.lastMood.content) {
+
+    },
+
+    bot() {
+
+    },
+
     async pullChat() {
       // 拉一条
       if (this.needComfort) {
         // 拉取安抚自己最近mood的comfort
+        if (!this.data.lastMood) return
+
+        const db = this.db
+        const _ = db.command
+
+        // 直接命中
+        let res = await this.aggregate(
+          COLLECTIONS.comfort,
+          { content: _.eq(this.data.lastMood.content) }
+        )
+        if (res.data.length) {
+          this.setData({ chats: [...this.data.chats, res.data[0]] })
+          return
+        }
+
+        // 没有直接命中，根据key找
+        const key = await this.getKey()
+        if (key) {
+          res = await this.aggregate(
+            COLLECTIONS.comfort,
+            { key: _.eq(key) }
+          )
+          if (res.data.length) {
+            this.setData({ chats: [...this.data.chats, res.data[0]] })
+            return
+          }
+        }
+        
+        // 全部未命中
+        this.bot()
       } else {
         // 随便拉mood
         const db = this.db
         const _ = db.command
-        const { data } = await db.collection(COLLECTIONS.mood)
-          .aggregate()
-          .sample({
-            size: 1
-          })
-          .end()
-        // todo 拿到后处理成chat
+        const { data } = await this.aggregate(COLLECTIONS.mood)
+        if (!data.length) return
+        this.setData({ chats: [...this.data.chats, data[0]] })
       }
     },
 
     async pushChat(e) {
       this.try(async () => {
-        if (!e.detail.value) return
+        const content = e.detail.value.trim().slice(0, 140)
+        if (!content) return
 
         const db = this.db
         const _ = db.command
 
+        const key = await this.getKey()
+
+        if (!key) {
+          this.bot()
+          return
+        }
+
         const chat = {
           _id: getRandomId(),
+          _openid: this.data.openId,
           user_info: this.data.userInfo,
-          type: 'text',
-          content: e.detail.value,
+          content,
           send_time: Date.now(),
-          targetId: '',
-          targetText: ''
+          type: this.needComfort ? 'mood' : 'comfort',
+          key
+        }
+
+        if (this.needComfort) {
+          this.setData({ lastMood: chat })
         }
 
         this.setData({
           textInputValue: '',
-          chats: [
-            ...this.data.chats,
-            {
-              ...chat,
-              _openid: this.data.openId,
-              writeStatus: 'pending',
-            },
-          ],
+          chats: [...this.data.chats, chat]
         })
 
         this.scrollToBottom(true)
@@ -134,16 +174,9 @@ Component({
           data: chat,
         })
 
-        this.setData({
-          chats: this.data.chats.map(v => {
-            if (v._id === chat._id) {
-              return {
-                ...v,
-                writeStatus: 'written',
-              }
-            } else return v
-          }),
-        })
+        if (this.needComfort) {
+          this.pullChat()
+        }
       }, '发送文字失败')
     },
 
@@ -228,6 +261,22 @@ Component({
         },
       })
     },
+
+    aggregate(collection, where = {}, size = 1) {
+      const db = this.db
+      const _ = db.command
+      return db
+        .collection(collection)
+        .where({
+          _openid: _.not(_.eq(this.data.openId)),
+          ...where
+        }).
+        aggregate()
+        .sample({
+          size
+        })
+        .end()
+    }
   },
 
 })
