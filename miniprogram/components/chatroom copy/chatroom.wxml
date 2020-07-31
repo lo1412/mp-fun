@@ -27,7 +27,19 @@
       ></image> 
       <view class="main">
         <view class="nickname">{{item.user_info.nickName}}</view>
-        <block>
+        <block wx:if="{{item.type === 'image'}}">
+          <view class="image-wrapper">
+            <view class="loading" wx:if="{{item.writeStatus > -1}}">{{item.writeStatus}}%</view>
+            <image 
+              src="{{item.tempFilePath || item.image_id}}" 
+              data-fileid="{{item.tempFilePath || item.image_id}}" 
+              class="image-content" 
+              style="{{item.imgStyle}}"
+              mode="scallToFill" 
+              bindtap="onMessageImageTap"></image>
+          </view>
+        </block>
+        <block wx:else>
           <view class="text-wrapper">
             <view class="loading" wx:if="{{item.writeStatus === 'pending'}}">···</view>
             <view class="text-content">{{item.content}}</view>
@@ -44,17 +56,17 @@
         class="text-input"
         type="text"
         confirm-type="send"
-        bindconfirm="pushChat"
+        bindconfirm="onConfirmSendText"
         cursor-spacing="20"
         value="{{textInputValue}}"
       ></input>
 
-      <!-- <image 
+      <image 
         src="./photo.png" 
         class="btn-send-image" 
         mode="scaleToFill"
         bindtap="onChooseImage"
-      ></image> -->
+      ></image>
     </view>
 
     <view class="message-sender" wx:if="{{!userInfo}}">
@@ -65,5 +77,6 @@
       >请先登录后参与聊天</button>
     </view>
   </view>
+
 </view>
 

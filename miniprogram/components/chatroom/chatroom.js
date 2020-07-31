@@ -5,10 +5,12 @@ const SETDATA_SCROLL_TO_BOTTOM = {
 }
 
 const COLLECTIONS = {
-  chat: 'chat',
-  room: 'room',
-  connection: 'connection'
+  mood: 'mood',
+  comfort: 'comfort',
 }
+
+// mood: _id, _openid, mood, key, user_info, send_time
+// comfort: 同上
 
 const watchers = {}
 
@@ -27,199 +29,122 @@ Component({
   },
 
   data: {
-    connection: {},
     chats: [],
     textInputValue: '',
     openId: '',
     scrollTop: 0,
     scrollToMessage: '',
-    hasKeyboard: false,
     count: 0
   },
 
+  ready() {
+    this.init()
+  },
+
   methods: {
+    async init() {
+      this.needComfort = true
+      this.try(async () => {
+        await this.initOpenID()
+        this.db = wx.cloud.database({
+          env: this.properties.envId,
+        })
+      }, '初始化失败')
+    },
+
     onGetUserInfo(e) {
       this.properties.onGetUserInfo(e)
     },
 
-    getOpenID() { 
-      return this.properties.getOpenID() 
-    },
+    async initOpenID() {
+      return this.try(async () => {
+        const openId = await this.properties.getOpenID()()
 
-    async initConnection() {
-      this.try(async () => {
-        await this.initOpenID()
-
-        const { envId } = this.properties
-        const db = this.db = wx.cloud.database({
-          env: envId,
-        })
-        const _ = db.command
-
-        const { data: [my_connection] } = await db.collection(COLLECTIONS.connection).where({_openid: this.data.openId}).get()
-
-        let connection = {}
-        if (my_connection) {
-          connection.status = 1
-          connection.openid_other = null
-          connection.status_change_time = null
-          connection.roomid = null
-          db.collection(COLLECTIONS.connection).doc(my_connection._id).update({
-            data: connection
-          })
-          connection = Object.assign(my_connection, connection)
-        } else {
-          connection = {
-            _id: getRandomId(),
-            status: 1,
-            openid_other: null,
-            status_change_time: null,
-            roomid: null
-          }
-          db.collection(COLLECTIONS.connection).add({
-            data: connection
-          })
-          connection._openid = this.data.openId
-        }
-
-        this.setData({ connection })
-
-        this.addWatcher(
-          COLLECTIONS.connection,
-          { _openid: this.data.openId },
-          this.onConnectionChange.bind(this)
-        )
-      }, '初始化失败')
-    },
-
-    onConnectionChange(snapshot) {
-      if (snapshot.type === 'init') {
-        this.inited = true
-      } else {
-        for (const docChange of snapshot.docChanges) {
-          if (docChange.queueType === 'update') {
-            const { connection } = this.data
-            if (connection.status !== docChange.doc.status) {
-              if (connection.status !== 3 && docChange.doc.status === 3) {
-                // 进入房间
-                this.joinRoom(docChange.doc.status.roomid)
-              } else if (connection.status === 3 && docChange.doc.status === 1) {
-                // 对方离开房间
-                if (watchers[COLLECTIONS.chat]) {
-                  watchers[COLLECTIONS.chat].close()
-                }
-              }
-              this.setData({
-                connection: docChange.doc
-              })
-            }
-            break
-          }
-        }
-      }
-    },
-
-    onChatChange(snapshot) {
-      console.error(snapshot)
-      if (snapshot.type === 'init') {
-        this.scrollToBottom()
-      } else {
-        let hasNewMessage = false
-        let hasOthersMessage = false
-        const chats = [...this.data.chats]
-        for (const docChange of snapshot.docChanges) {
-          // switch (docChange.queueType) {
-          //   case 'enqueue': {
-              hasOthersMessage = docChange.doc._openid !== this.data.openId
-              const index = chats.findIndex(chat => chat._id === docChange.doc._id)
-              if (index > -1) {
-                if (chats[index].type === 'image' && chats[index].tempFilePath) {
-                  chats.splice(index, 1, {
-                    ...docChange.doc,
-                    tempFilePath: chats[index].tempFilePath,
-                  })
-                } else chats.splice(index, 1, docChange.doc)
-              } else {
-                hasNewMessage = true
-                chats.push(docChange.doc)
-              }
-              break
-            }
-        //   }
-        // }
         this.setData({
-          chats: chats.sort((x, y) => y.send_time - x.send_time),
+          openId,
         })
-        if (hasOthersMessage || hasNewMessage) {
-          this.scrollToBottom()
-        }
+      }, '初始化 openId 失败')
+    },
+
+    initChat() {
+      if (this.chatInited) return
+      this.chatInited = true
+      wx.onAccelerometerChange(({x, y, z}) => {
+          if (!this.chatting || this.ignoreAcc || x < 1 || y < 1) return
+          this.ignoreAcc = true
+          this.pullChat()
+          setTimeout(() => {
+            this.ignoreAcc = false
+          }, 1000)
+      })
+    },
+
+    async pullChat() {
+      // 拉一条
+      if (this.needComfort) {
+        // 拉取安抚自己最近mood的comfort
+      } else {
+        // 随便拉mood
+        const db = this.db
+        const _ = db.command
+        const { data } = await db.collection(COLLECTIONS.mood)
+          .aggregate()
+          .sample({
+            size: 1
+          })
+          .end()
+        // todo 拿到后处理成chat
       }
     },
 
-    joinRoom(roomid) {
-      this.addWatcher(
-        COLLECTIONS.chat,
-        { roomid },
-        this.onChatChange.bind(this)
-      )
-    },
-
-    async prepareJoinRoom() {
+    async pushChat(e) {
       this.try(async () => {
+        if (!e.detail.value) return
+
         const db = this.db
         const _ = db.command
 
-        let { data: list } = await db.collection(COLLECTIONS.connection).where({
-          _openid: _.not(_.eq(this.data.openId)),
-          status: 2
-        }).get()
-        const { connection, openId } = this.data
-
-        if (list.length) {
-          list.sort((x, y) => x.status_change_time - y.status_change_time)
-          connection.status = 3
-          connection.openid_other = list[0]._openid
-          connection.status_change_time = null
-          connection.roomid =  getRandomId()
-          db.collection(COLLECTIONS.room).add({
-            data: {
-              _id: connection.roomid,
-              openid_1: openId,
-              openid_2: list[0]._openid
-            }
-          })
-          db.collection(COLLECTIONS.connection).doc(connection._id).update({
-            data: {
-              status: connection.status,
-              openid_other: connection.openid_other,
-              status_change_time: connection.status_change_time,
-              roomid: connection.roomid
-            }
-          })
-          db.collection(COLLECTIONS.connection).doc(list[0]._id).update({
-            data: {
-              status: connection.status,
-              openid_other: openId,
-              status_change_time: null,
-              roomid: connection.roomid
-            }
-          })
-          this.joinRoom(connection.roomid)
-        } else {
-          connection.status = 2
-          connection.status_change_time = Date.now()
-          db.collection(COLLECTIONS.connection).doc(connection._id).update({
-            data: {
-              status: connection.status,
-              status_change_time: connection.status_change_time
-            }
-          })
+        const chat = {
+          _id: getRandomId(),
+          user_info: this.data.userInfo,
+          type: 'text',
+          content: e.detail.value,
+          send_time: Date.now(),
+          targetId: '',
+          targetText: ''
         }
 
         this.setData({
-          connection
+          textInputValue: '',
+          chats: [
+            ...this.data.chats,
+            {
+              ...chat,
+              _openid: this.data.openId,
+              writeStatus: 'pending',
+            },
+          ],
         })
-      }, '初始化失败')
+
+        this.scrollToBottom(true)
+
+        this.count += 1
+
+        await db.collection(COLLECTIONS.chat).add({
+          data: chat,
+        })
+
+        this.setData({
+          chats: this.data.chats.map(v => {
+            if (v._id === chat._id) {
+              return {
+                ...v,
+                writeStatus: 'written',
+              }
+            } else return v
+          }),
+        })
+      }, '发送文字失败')
     },
 
     async addWatcher(collection, criteria, onChange) {
@@ -248,162 +173,6 @@ Component({
           },
         })
       }, '初始化监听失败')
-    },
-
-    async initOpenID() {
-      return this.try(async () => {
-        const openId = await this.getOpenID()
-
-        this.setData({
-          openId,
-        })
-      }, '初始化 openId 失败')
-    },
-
-    bot() {
-      setTimeout(() => {
-        const count = this.data.count + 1
-        this.setData({
-          count,
-          chats: [
-            ...this.data.chats,
-            {
-              _id: getRandomId(),
-              user_info: {
-                nickName: 'bot'
-              },
-              content: count === 1 ? '等待连接' : count,
-              send_time: Date.now()
-            },
-          ],
-        })
-
-        if (count > 0) {
-          this.prepareJoinRoom()
-        }
-
-        this.scrollToBottom(true)
-      }, 1000)
-    },
-
-    async onConfirmSendText(e) {
-      this.try(async () => {
-        if (!e.detail.value) {
-          return
-        }
-
-        const db = this.db
-        const _ = db.command
-
-        const chat = {
-          _id: getRandomId(),
-          roomid: this.data.connection.roomid,
-          user_info: this.data.userInfo,
-          type: 'text',
-          content: e.detail.value,
-          send_time: Date.now()
-        }
-
-        this.setData({
-          textInputValue: '',
-          chats: [
-            ...this.data.chats,
-            {
-              ...chat,
-              _openid: this.data.openId,
-              writeStatus: this.data.connection.status === 3 ? 'pending' : 'written',
-            },
-          ],
-        })
-        this.scrollToBottom(true)
-
-        if (this.data.connection.status !== 3) return this.bot()
-
-        await db.collection(COLLECTIONS.chat).add({
-          data: chat,
-        })
-
-        this.setData({
-          chats: this.data.chats.map(v => {
-            if (v._id === chat._id) {
-              return {
-                ...v,
-                writeStatus: 'written',
-              }
-            } else return v
-          }),
-        })
-      }, '发送文字失败')
-    },
-
-    async onChooseImage(e) {
-      wx.chooseImage({
-        count: 1,
-        sourceType: ['album', 'camera'],
-        success: async res => {
-          const { envId } = this.properties
-          const chat = {
-            _id: getRandomId(),
-            roomid: this.data.connection.roomid,
-            user_info: this.data.userInfo,
-            type: 'image',
-            send_time: Date.now()
-          }
-
-          this.setData({
-            chats: [
-              ...this.data.chats,
-              {
-                ...chat,
-                _openid: this.data.openId,
-                tempFilePath: res.tempFilePaths[0],
-                writeStatus: 0,
-              },
-            ]
-          })
-          this.scrollToBottom(true)
-
-          const uploadTask = wx.cloud.uploadFile({
-            cloudPath: `${this.data.openId}/${Math.random()}_${Date.now()}.${res.tempFilePaths[0].match(/\.(\w+)$/)[1]}`,
-            filePath: res.tempFilePaths[0],
-            config: {
-              env: envId,
-            },
-            success: res => {
-              this.try(async () => {
-                await this.db.collection(COLLECTIONS.chat).add({
-                  data: {
-                    ...chat,
-                    image_id: res.fileID,
-                  },
-                })
-              }, '发送图片失败')
-            },
-            fail: e => {
-              this.showError('发送图片失败', e)
-            },
-          })
-
-          uploadTask.onProgressUpdate(({ progress }) => {
-            this.setData({
-              chats: this.data.chats.map(v => {
-                if (v._id === chat._id) {
-                  return {
-                    ...v,
-                    writeStatus: progress,
-                  }
-                } else return v
-              })
-            })
-          })
-        },
-      })
-    },
-
-    onMessageImageTap(e) {
-      wx.previewImage({
-        urls: [e.target.dataset.fileid],
-      })
     },
 
     scrollToBottom(force) {
@@ -461,7 +230,4 @@ Component({
     },
   },
 
-  ready() {
-    this.initConnection()
-  },
 })
