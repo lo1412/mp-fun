@@ -1,0 +1,30 @@
+<view class="paper-plane">
+  <plane
+    wx:if="{{status !== 'comfort' && status !== 'mood'}}"
+    status="{{status}}" setStatus="{{setStatus}}"
+    style="flex: 1;"
+    userInfo="{{userInfo}}"
+    onGetUserInfo="{{onGetUserInfo}}"></plane>
+
+  <block wx:else>
+    <view class="rich">
+      <view class="mood">
+        <view>{{mood}}</view>
+        <view wx:if="{{status === 'comfort'}}" class="name">{{name}}</view>
+      </view>
+      
+      <textarea
+        auto-focus="{{status === 'mood'}}"
+        placeholder="写下回复···"
+        maxlength="140"
+        bindconfirm="onConfirm"
+        bindblur="onConfirm"></textarea>
+  
+      <view wx:if="{{content}}" class="name">{{name}}</view>
+    </view>
+  
+    <view wx:if="{{content}}" class="plane-button" bindtap="goToPrepare">
+      折成纸飞机
+    </view>
+  </block>
+</view>

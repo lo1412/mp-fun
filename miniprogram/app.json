@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/paper-plane/paper-plane",
     "pages/room/room",
     "pages/index/index",
     "pages/userConsole/userConsole",
@@ -17,7 +18,7 @@
     "backgroundColor": "#F6F6F6",
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#F6F6F6",
-    "navigationBarTitleText": "🌈",
+    "navigationBarTitleText": "纸飞机",
     "navigationBarTextStyle": "black"
   },
   "sitemapLocation": "sitemap.json",

@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "plane": "/components/plane/plane"
+  }
+}

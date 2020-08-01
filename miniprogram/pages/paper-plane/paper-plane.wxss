@@ -1,0 +1,51 @@
+/* miniprogram/pages/paper-plane/paper-plane.wxss */
+
+Page {
+  box-sizing: border-box;
+  height: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.paper-plane {
+  height: 100%;
+  background: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rich {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 630rpx;
+  height: 840rpx;
+  margin-top: 60rpx;
+  padding: 50rpx;
+  background: #fff;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.10);
+  border-radius: 2px;
+  font-size: 28rpx;
+}
+
+.mood {
+  font-family: SourceHanSerifSC-Regular;
+  border-bottom: 1rpx #eee solid;
+  padding-bottom: 40rpx;
+}
+
+.name {
+  text-align: right;
+  margin-top: 30rpx;
+}
+
+textarea {
+  width: 100%;
+  flex: 1;
+  padding: 40rpx 0;
+}
+
+.plane-button {
+  margin-bottom: 308rpx;
+}

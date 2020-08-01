@@ -1,0 +1,59 @@
+/* components/plane/plane.wxss */
+
+.plane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plane-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 120rpx;
+  position: relative;
+}
+
+.plane-wrapper .plane-icon {
+  width: 360rpx;
+  height: 360rpx;
+}
+
+.plane-wrapper .plane-bg {
+  position: absolute;
+  width: 440rpx;
+  height: 350rpx;
+  z-index: -1;
+}
+
+.plane-wrapper .plane-header {
+  margin-top: 80rpx;
+  font-size: 40rpx;
+  font-family: SourceHanSerifSC-SemiBold;
+  line-height: 58rpx;
+}
+
+.plane-wrapper .plane-tips {
+  margin-top: 20rpx;
+  font-size: 32rpx;
+  color: #777;
+  width: 512rpx;
+  text-align: center;
+  font-family: SourceHanSerifSC-Regular;
+  line-height: 52rpx;
+}
+
+.plane-button {
+  margin-bottom: 222rpx;
+  width: 450rpx;
+  height: 92rpx;
+  background: #FF4E00;
+  border-radius: 51rpx;
+  font-family: SourceHanSerifSC-Heavy;
+  color: #fff;
+  font-size: 38rpx;
+  text-align: center;
+  line-height: 92rpx;
+}

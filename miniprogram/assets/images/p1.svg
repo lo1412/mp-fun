@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="169px" height="65px" viewBox="0 0 169 65" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>✈️/侧</title>
+    <defs>
+        <path d="M25.6395163,39.7276688 L27.8028554,64.3713933 C27.8270036,64.6464778 28.0695796,64.8499018 28.3446641,64.8257536 C28.3673798,64.8237596 28.3899326,64.8202138 28.4121644,64.8151413 L168.992759,32.7394581 L168.992759,32.7394581 L50.6583092,0.060230637 C50.5196759,0.021945679 50.3712701,0.0452122367 50.2510046,0.124086469 L30.2210511,13.2604169 L30.2210511,13.2604169 L30.2210511,20.2391039 L23.1704992,19.5427203 L1.00871387,39.9668845 C0.805653472,40.1540238 0.792746796,40.470343 0.979886007,40.6734034 C1.07993607,40.7819654 1.22284889,40.8407624 1.37032947,40.8340392 L25.6395163,39.7276688 L25.6395163,39.7276688 Z" id="path-1"></path>
+        <linearGradient x1="7.42150289%" y1="52.1572282%" x2="6.00713631%" y2="48.5783484%" id="linearGradient-3">
+            <stop stop-color="#FF2D00" offset="0%"></stop>
+            <stop stop-color="#E43C01" offset="60.0621609%"></stop>
+            <stop stop-color="#D84606" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="23.6067555%" y1="52.0931532%" x2="77.6955044%" y2="46.0481531%" id="linearGradient-4">
+            <stop stop-color="#FC5D16" offset="0%"></stop>
+            <stop stop-color="#FF2D00" offset="100%"></stop>
+        </linearGradient>
+        <polygon id="path-5" points="-1.47971661e-14 40.896509 168.992759 32.7394581 50.4402086 2.48689958e-14 30.2210511 13.2604169 144.672594 29.8460668 23.1704992 19.5427203"></polygon>
+        <linearGradient x1="0%" y1="52.9282374%" x2="100%" y2="47.0717626%" id="linearGradient-7">
+            <stop stop-color="#FC5D16" offset="0%"></stop>
+            <stop stop-color="#FF9100" offset="100%"></stop>
+        </linearGradient>
+        <polygon id="path-8" points="1.36245433e-14 40.896509 168.992759 32.7394581 50.4402086 -3.19744231e-14 62.4637633 18.8870444 144.672594 29.8460668 61.5114984 22.0738317"></polygon>
+        <filter x="-5.3%" y="-17.1%" width="108.3%" height="134.2%" filterUnits="objectBoundingBox" id="filter-9">
+            <feOffset dx="-2" dy="0" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.02 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="✈️/侧" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="✈️">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <use id="路径-3" fill="#F53F05" xlink:href="#path-1"></use>
+            <polygon id="路径-3" fill="url(#linearGradient-3)" mask="url(#mask-2)" points="25.6395163 39.7276688 26.1586821 45.641758 27.8530092 64.9427214 168.992759 32.7394581"></polygon>
+            <g id="编组" mask="url(#mask-2)">
+                <g transform="translate(0.000000, 0.000000)">
+                    <mask id="mask-6" fill="white">
+                        <use xlink:href="#path-5"></use>
+                    </mask>
+                    <use id="路径-2" stroke="none" fill="url(#linearGradient-4)" fill-rule="evenodd" xlink:href="#path-5"></use>
+                    <g id="路径-2" stroke="none" fill="none" mask="url(#mask-6)">
+                        <use fill="black" fill-opacity="1" filter="url(#filter-9)" xlink:href="#path-8"></use>
+                        <use fill="url(#linearGradient-7)" fill-rule="evenodd" xlink:href="#path-8"></use>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
