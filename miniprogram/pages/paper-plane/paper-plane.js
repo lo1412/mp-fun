@@ -1,57 +1,100 @@
 // miniprogram/pages/paper-plane/paper-plane.js
-Page({
 
+const COLLECTIONS = {
+  mood: 'mood',
+  comfort: 'comfort',
+}
+const getRandomId = () => `${Math.random()}_${Date.now()}`
+
+Page({
   /**
    * 页面的初始数据
    */
   data: {
+    // welcome mood sending recieve-comfort recieve-mood comfort sending sended
     status: 'welcome',
+    planeVisible: true,
     mood: '生活是一段旅程并非每个人都会去同一个地方。',
     content: '',
-    name: 'hakon',
+    key: '',
+    name: '',
     avatarUrl: '',
     userInfo: null,
     openId: '',
     onGetUserInfo: null,
+    // 单独摇一摇的流程
+    isSecond: false,
+    recieve: {}
   },
 
   /**
    * 生命周期函数--监听页面加载
    */
   onLoad: function (options) {
-    // wx.getSetting({
-    //   success: res => {
-    //     console.log(res)
-    //     if (res.authSetting['scope.userInfo']) {
-    //       // 已经授权，可以直接调用 getUserInfo 获取头像昵称，不会弹框
-    //       wx.getUserInfo({
-    //         success: res => {
-    //           this.setData({
-    //             avatarUrl: res.userInfo.avatarUrl,
-    //             userInfo: res.userInfo
-    //           })
-    //         }
-    //       })
-    //     }
-    //   }
-    // })
-
-    this.init()
+    this.init(options)
   },
 
-  init: async function() {
+  init: async function(options) {
+    // 获取用户信息
+    wx.getSetting({
+      success: res => {
+        if (res.authSetting['scope.userInfo']) {
+          // 已经授权，可以直接调用 getUserInfo 获取头像昵称，不会弹框
+          wx.getUserInfo({
+            success: res => {
+              this.setData({
+                avatarUrl: res.userInfo.avatarUrl,
+                userInfo: res.userInfo
+              })
+            }
+          })
+        }
+      }
+    })
+
+    this.setData({
+      isSecond: !!options.second
+    })
+
+    this.setStatus(!!options.second ? 'recieve-mood' : 'welcome')
+
+    this.addListeners()
+
     this.try(async () => {
       await this.initOpenID()
-      this.db = wx.cloud.database({
-        env: this.properties.envId,
-      })
+      this.db = wx.cloud.database({})
       this.setData({
         onGetUserInfo: this.onGetUserInfo,
         setStatus: this.setStatus
       })
 
-      this.isInit = true
+      this.hasInited = true
     }, '初始化失败')
+  },
+
+  addListeners() {
+    wx.onAccelerometerChange(({x, y, z}) => {
+        if (this.ignore || x < 1 || y < 1) return
+        this.ignore = true
+        this.goToRecieveMood()
+        setTimeout(() => {
+          this.ignore = false
+        }, 1000)
+    })
+  },
+
+  goToRecieveMood() {
+    const { status, isSecond } = this.data
+    if (['welcome', 'recieve-mood'].includes(status)) return
+    if (isSecond && !['sended'].includes(status)) return
+    if (status === 'sended') {
+      // 直接设
+      this.setStatus('recieve-mood')
+    } else {
+      wx.navigateTo({
+        url: '/pages/paper-plane/paper-plane?second=1',
+      })
+    }
   },
 
   initOpenID: async function() {
@@ -79,22 +122,67 @@ Page({
     })
   },
 
-  goToPrepare() {
-    this.setStatus('prepare')
-  },
-
-  send() {
-    // console.log(this.data.content)
-
+  onInputConfirm(e) {
     this.setData({
-      content: ''
+      name: e.detail.value.trim()
     })
   },
 
-  setStatus(status) {
-    if (!this.isInit || !this.data.openId || !this.data.userInfo) return
-    this.setData({status})
-    status === 'sending' && this.send()
+  send() {
+    const { status, content, userInfo, recieve, name } = this.data
+    if (!content) return
+    this.try(async () => {
+      const isValid = await this.isValid(content + (status === 'mood' ? '' : name))
+      if (!isValid || !isValid.result) {
+        // todo 提示
+        return
+      }
+
+      const key = await (status === 'mood' ? this.getKey(content) : recieve.key)
+      if (!key) {
+        this.bot()
+        return
+      }
+
+      this.setStatus('sending')
+
+      const db = this.db
+      const _ = db.command
+
+      const data = {
+        _id: getRandomId(),
+        user_info: userInfo,
+        name,
+        content,
+        send_time: Date.now(),
+        type: status,
+        key
+      }
+
+      await db.collection(COLLECTIONS[status]).add({ data })
+
+      this.setData({
+        mood: status === 'mood' ? content : '',
+        content: '',
+        key
+      })
+      this.setStatus(status === 'mood' ? 'recieve-comfort' : 'sended')
+    }, '发送失败')
+  },
+
+  async setStatus(status) {
+    if (!this.data.isSecond && (!this.hasInited || !this.data.openId || !this.data.userInfo)) return
+
+    if (['recieve-comfort', 'comfort'].includes(status)) {
+      await this.pull(status)
+    }
+
+    console.log('go to', status)
+
+    this.setData({
+      status,
+      planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood'].includes(status)
+    })
   },
 
   /**
@@ -107,145 +195,72 @@ Page({
     }
   },
 
+  isValid(value) {
+    return wx.cloud.callFunction({
+      name: 'msgSecCheck',
+      content: value
+    })
+  },
 
-  ///////////////// 下方为原逻辑
-
-  getKey(value = this.data.lastMood.content) {
-
+  getKey(value) {
+    return 'test'
   },
 
   bot() {
 
   },
 
-  addChat(chat) {
-    this.setData({ chats: [...this.data.chats, chat] })
-    this.scrollToBottom(true)
-  },
+  async pull(status) {
+    const { key, mood } = this.data
+    const db = this.db
+    const _ = db.command
 
-  async pullChat() {
     // 拉一条
-    if (this.needComfort) {
+    if (status === 'recieve-comfort') {
       // 拉取安抚自己最近mood的comfort
-      if (!this.data.lastMood) return
-
-      const db = this.db
-      const _ = db.command
 
       // 直接命中
       let res = await this.aggregate(
         COLLECTIONS.comfort,
-        { content: _.eq(this.data.lastMood.content) }
+        { content: _.eq(mood) }
       )
-      if (res.data.length) {
-        this.addChat(res.data[0])
+      
+      if (res.list.length) {
+        this.setRecieve(res.list[0], status)
         return
       }
 
       // 没有直接命中，根据key找
-      const key = await this.getKey()
-      if (key) {
-        res = await this.aggregate(
-          COLLECTIONS.comfort,
-          { key: _.eq(key) }
-        )
-        if (res.data.length) {
-          this.addChat(res.data[0])
-          return
-        }
+      if (!key) return  
+      res = await this.aggregate(
+        COLLECTIONS.comfort,
+        { key: _.eq(key) }
+      )
+      if (res.list.length) {
+        this.setRecieve(res.list[0], status)
+        return
       }
       
       // 全部未命中
       this.bot()
     } else {
       // 随便拉mood
-      const db = this.db
-      const _ = db.command
-      const { data } = await this.aggregate(COLLECTIONS.mood)
-      if (!data.length) return
-      this.addChat(data[0])
+      const { list } = await this.aggregate(COLLECTIONS.mood)
+      if (!list.length) return
+      this.setRecieve(list[0], status)
     }
   },
 
-  async pushChat(e) {
-    this.try(async () => {
-      const content = e.detail.value.trim().slice(0, 140)
-      if (!content) return
-
-      const db = this.db
-      const _ = db.command
-
-      const key = await (this.needComfort ? this.getKey() : this.data.chats.slice(-1)[0].key)
-
-      if (!key) {
-        this.bot()
-        return
-      }
-
-      const chat = {
-        _id: getRandomId(),
-        _openid: this.data.openId,
-        user_info: this.data.userInfo,
-        content,
-        send_time: Date.now(),
-        type: this.needComfort ? 'mood' : 'comfort',
-        key
-      }
-
-      if (this.needComfort) {
-        this.setData({ lastMood: chat })
-      }
-
-      this.setData({ textInputValue: '' })
-      this.addChat(chat)
-
-      this.count += 1
-
-      await db.collection(COLLECTIONS.chat).add({
-        data: chat,
-      })
-
-      if (this.needComfort) {
-        this.pullChat()
-      }
-    }, '发送文字失败')
-  },
-
-  async addWatcher(collection, criteria, onChange) {
-    this.try(() => {
-      const db = this.db
-      const _ = db.command
-
-      console.warn(`开始监听`, collection, criteria)
-      if (watchers[collection]) {
-        watchers[collection].close()
-      }
-      watchers[collection] = db.collection(collection).where(criteria).watch({
-        onChange,
-        onError: e => {
-        },
-      })
-    }, '初始化监听失败')
-  },
-
-  scrollToBottom(force) {
-    if (force) {
-      console.log('force scroll to bottom')
-      this.setData(SETDATA_SCROLL_TO_BOTTOM)
-      return
+  setRecieve(recieve, status) {
+    const data = { recieve }
+    if (status === 'recieve-comfort') {
+      data.name = recieve.name
+      data.content = recieve.content
+    } else {
+      data.mood = recieve.content
+      data.name = ''
     }
-
-    this.createSelectorQuery().select('.body').boundingClientRect(bodyRect => {
-      this.createSelectorQuery().select(`.body`).scrollOffset(scroll => {
-        if (scroll.scrollTop + bodyRect.height * 3 > scroll.scrollHeight) {
-          console.log('should scroll to bottom')
-          this.setData(SETDATA_SCROLL_TO_BOTTOM)
-        }
-      }).exec()
-    }).exec()
-  },
-
-  async onScrollToUpper() {
+    this.setData(data)
   },
 
   async try(fn, title) {
@@ -269,16 +284,16 @@ Page({
     })
   },
 
-  aggregate(collection, where = {}, size = 1) {
+  aggregate(collection, match = {}, size = 1) {
     const db = this.db
     const _ = db.command
     return db
       .collection(collection)
-      .where({
-        _openid: _.not(_.eq(this.data.openId)),
-        ...where
-      }).
-      aggregate()
+      .aggregate()
+      .match({
+        // _openid: _.not(_.eq(this.data.openId)),
+        ...match
+      })
       .sample({
         size
       })

@@ -8,6 +8,10 @@
   justify-content: space-between;
 }
 
+button {
+  padding: 0;
+}
+
 .plane-wrapper {
   display: flex;
   flex-direction: column;

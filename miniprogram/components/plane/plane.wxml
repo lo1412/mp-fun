@@ -6,9 +6,9 @@
     <image wx:if="{{status !== 'prepare'}}" class="plane-icon" src="../../assets/images/p2.svg"></image>
     <image wx:else class="plane-icon" src="../../assets/images/p1.svg"></image>
 
-    <text class="plane-header">{{header}}</text>
+    <text class="plane-header">{{placeholder[0]}}</text>
 
-    <text class="plane-tips">{{tips}}</text>
+    <text class="plane-tips">{{placeholder[1]}}</text>
   </view>
 
   <button
@@ -16,6 +16,13 @@
     open-type="getUserInfo" 
     bindgetuserinfo="onGetUserInfo"
     class="plane-button">
-    写点什么
+    {{placeholder[2]}}
+  </button>
+
+  <button
+    wx:if="{{status === 'recieve-mood'}}"
+    class="plane-button"
+    bindtap="goToComfort">
+    {{placeholder[2]}}
   </button>
 </view>

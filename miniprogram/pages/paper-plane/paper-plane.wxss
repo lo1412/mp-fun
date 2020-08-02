@@ -13,6 +13,7 @@ Page {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 
 .rich {
@@ -40,7 +41,7 @@ Page {
   margin-top: 30rpx;
 }
 
-textarea {
+.textarea {
   width: 100%;
   flex: 1;
   padding: 40rpx 0;
@@ -48,4 +49,9 @@ textarea {
 
 .plane-button {
   margin-bottom: 308rpx;
+}
+
+.test {
+  position: absolute;
+  bottom: 0;
 }

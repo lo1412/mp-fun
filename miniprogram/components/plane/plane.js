@@ -1,9 +1,10 @@
 // components/plane/plane.js
 
 const placeholders = {
-  welcome: ['最近有什么烦恼吗？', '不如把心事写在纸上，折一架纸飞机也许纸飞机会给你答案'],
-  prepare: ['纸飞机折好了！', '手势向右滑一滑，让纸飞机起飞吧'],
-  sending: ['纸飞机，飞啊飞', '还有多久才能飞回到你的手里呢']
+  welcome: ['最近有什么烦恼吗？', '不如把心事写在纸上，折一架纸飞机也许纸飞机会给你答案', '写点什么'],
+  sending: ['纸飞机折好了！', '手势向右滑一滑，让纸飞机起飞吧'],
+  sended: ['纸飞机，飞啊飞', '还有多久才能飞回到你的手里呢'],
+  'recieve-mood': ['收到了一架纸飞机！', '不知从哪儿飞来的纸飞机，上面好像写了字', '拆开看看']
 }
 
 Component({
@@ -12,13 +13,10 @@ Component({
    */
   properties: {
     status: {
-      type: String, // welcome prepare sending mood comfort
+      type: String,
       observer(v) {
-        const placeholder = placeholders[v] || ['', '']
-        this.setData({
-          header: placeholder[0],
-          tips: placeholder[1],
-        })
+        const placeholder = placeholders[v] || ['', '', '']
+        this.setData({ placeholder })
       }
     },
     setStatus: {
@@ -34,12 +32,11 @@ Component({
    * 组件的初始数据
    */
   data: {
-    header: '',
-    tips: ''
+    placeholder: ['', '', '']
   },
 
   ready() {
-    this.addListeners()
+
   },
   /**
    * 组件的方法列表
@@ -50,21 +47,13 @@ Component({
       this.setStatus('mood')
     },
 
-    addListeners() {
-      wx.onAccelerometerChange(({x, y, z}) => {
-          const { status } = this.properties
-          if (status !== 'sending' || this.ignore || x < 1 || y < 1) return
-          this.ignore = true
-          this.setStatus('comfort')
-          setTimeout(() => {
-            this.ignore = false
-          }, 1000)
-      })
-    },
-
     setStatus(status) {
       const { setStatus } = this.properties
       setStatus && setStatus(status)
+    },
+
+    goToComfort() {
+      this.setStatus('comfort')
     },
 
     onTouchStart(e) {
