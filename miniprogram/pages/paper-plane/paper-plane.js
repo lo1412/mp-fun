@@ -1,8 +1,9 @@
 // miniprogram/pages/paper-plane/paper-plane.js
-
+const { getKeyword, checkMsgValid } = require('../../lib/robot')
 const COLLECTIONS = {
   mood: 'mood',
   comfort: 'comfort',
+  commonReply: 'common_reply'
 }
 const getRandomId = () => `${Math.random()}_${Date.now()}`
 
@@ -133,7 +134,7 @@ Page({
     if (!content) return
     this.try(async () => {
       const isValid = await this.isValid(content + (status === 'mood' ? '' : name))
-      if (!isValid || !isValid.result) {
+      if (!isValid) {
         // todo 提示
         return
       }
@@ -196,18 +197,27 @@ Page({
   },
 
   isValid(value) {
-    return wx.cloud.callFunction({
-      name: 'msgSecCheck',
-      content: value
-    })
+    return checkMsgValid(value)
   },
 
   getKey(value) {
-    return 'test'
+    return getKeyword(value)
   },
 
-  bot() {
-
+  async bot() {
+    console.log('bot')
+    const db = this.db
+    const _ = db.command
+    const { list } = await this.aggregate(COLLECTIONS.commonReply)
+    let answer = '别沮丧，生活就像心电图，一帆风顺就证明你挂了。'
+    let recieve = {
+      name: '一位热心群众',
+      content: answer
+    }
+    if (list.length > 0 && list[0]) {
+      recieve.content = list[0].content || answer
+    }
+    this.setRecieve(recieve, 'recieve-comfort')
   },
 
   async pull(status) {

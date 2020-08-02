@@ -121,6 +121,10 @@ function checkMsgValid(query) {
     
 }
 
+function commonAnswer() {
+  
+}
+
 module.exports = {
   getAnswer,
   getKeyword,
