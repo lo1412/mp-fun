@@ -1,5 +1,6 @@
 // miniprogram/pages/paper-plane/paper-plane.js
 const { getKeyword, checkMsgValid } = require('../../lib/robot')
+const plugin = requirePlugin("chatbot")
 const COLLECTIONS = {
   mood: 'mood',
   comfort: 'comfort',
@@ -140,6 +141,7 @@ Page({
       }
 
       const key = await (status === 'mood' ? this.getKey(content) : recieve.key)
+      console.log(key)
       if (!key) {
         this.bot()
         return
