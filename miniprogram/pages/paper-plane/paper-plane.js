@@ -140,36 +140,34 @@ Page({
         return
       }
 
+      this.setStatus('sending')
+
       const key = await (status === 'mood' ? this.getKey(content) : recieve.key)
-      console.log(key)
+
+      if (key) {
+        const db = this.db
+        const _ = db.command
+
+        const data = {
+          _id: getRandomId(),
+          user_info: userInfo,
+          name,
+          content,
+          send_time: Date.now(),
+          type: status,
+          key
+        }
+
+        await db.collection(COLLECTIONS[status]).add({ data })
+      }
+      
+
       this.setData({
         mood: status === 'mood' ? content : '',
         content: '',
         key
       })
-      if (!key) {
-        this.bot()
-        return
-      }
 
-      this.setStatus('sending')
-
-      const db = this.db
-      const _ = db.command
-
-      const data = {
-        _id: getRandomId(),
-        user_info: userInfo,
-        name,
-        content,
-        send_time: Date.now(),
-        type: status,
-        key
-      }
-
-      await db.collection(COLLECTIONS[status]).add({ data })
-
-   
       this.setStatus(status === 'mood' ? 'recieve-comfort' : 'sended')
     }, '发送失败')
   },
@@ -182,10 +180,15 @@ Page({
     }
 
     console.log('go to', status)
-
-    this.setData({
-      status,
-      planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood'].includes(status)
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        this.setData({
+          status,
+          planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood'].includes(status)
+        })
+        resolve
+      }, 0)
     })
   },
 
@@ -220,8 +223,7 @@ Page({
     if (list.length > 0 && list[0]) {
       recieve.content = list[0].content || answer
     }
-    await this.setRecieve(recieve, 'recieve-comfort')
-    this.setStatus('recieve-comfort')
+    this.setRecieve(recieve, 'recieve-comfort')
   },
 
   async pull(status) {
@@ -245,18 +247,19 @@ Page({
       }
 
       // 没有直接命中，根据key找
-      if (!key) return  
+      if (!key) {
+        // 全部未命中
+        this.bot()
+        return
+      }  
       res = await this.aggregate(
         COLLECTIONS.comfort,
         { key: _.eq(key) }
       )
+      
       if (res.list.length) {
         this.setRecieve(res.list[0], status)
-        return
       }
-      
-      // 全部未命中
-      this.bot()
     } else {
       // 随便拉mood
       const { list } = await this.aggregate(COLLECTIONS.mood)
@@ -305,7 +308,7 @@ Page({
       .collection(collection)
       .aggregate()
       .match({
-        // _openid: _.not(_.eq(this.data.openId)),
+        _openid: _.not(_.eq(this.data.openId)),
         ...match
       })
       .sample({
