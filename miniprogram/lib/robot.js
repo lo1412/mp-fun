@@ -1,6 +1,6 @@
 const token = 'ZOEpihPZqN14CK2CScmPzciwl96gEC';
 const host = 'https://openai.weixin.qq.com/openapi';
-
+const plugin = requirePlugin("chatbot");
 function getSignature(openid) {
   const url = '/sign/';
   return new Promise((resolve, reject) => {
@@ -103,6 +103,12 @@ function getAnswer(openid, query) {
 
 function checkMsgValid(query) {
    return new Promise((resolve, reject) => {
+      // plugin.api.nlp('sensitive', {q: query, mode: 'cnn'}).then(res => {
+      //   console.log("sensitive result : ", res)
+      //   resolve(false)
+      // }).catch(err => {
+      //   reject(err)
+      // })
       wx.cloud.callFunction({
         // 云函数名称
         name: 'msgSecCheck',
@@ -112,6 +118,7 @@ function checkMsgValid(query) {
         },
       })
       .then(res => {
+        console.log('res', res.result)
         resolve(res.result)
       })
       .catch(err => {
@@ -119,6 +126,10 @@ function checkMsgValid(query) {
       })
    })
     
+}
+
+function commonAnswer() {
+
 }
 
 module.exports = {
