@@ -142,6 +142,11 @@ Page({
 
       const key = await (status === 'mood' ? this.getKey(content) : recieve.key)
       console.log(key)
+      this.setData({
+        mood: status === 'mood' ? content : '',
+        content: '',
+        key
+      })
       if (!key) {
         this.bot()
         return
@@ -164,11 +169,7 @@ Page({
 
       await db.collection(COLLECTIONS[status]).add({ data })
 
-      this.setData({
-        mood: status === 'mood' ? content : '',
-        content: '',
-        key
-      })
+   
       this.setStatus(status === 'mood' ? 'recieve-comfort' : 'sended')
     }, '发送失败')
   },
@@ -219,7 +220,8 @@ Page({
     if (list.length > 0 && list[0]) {
       recieve.content = list[0].content || answer
     }
-    this.setRecieve(recieve, 'recieve-comfort')
+    await this.setRecieve(recieve, 'recieve-comfort')
+    this.setStatus('recieve-comfort')
   },
 
   async pull(status) {
