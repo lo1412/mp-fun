@@ -7,37 +7,47 @@
     onGetUserInfo="{{onGetUserInfo}}"></plane>
 
   <block wx:else>
-    <view class="rich">
-      <view class="mood" style="{{content ? 'color: #888' : ''}}">
-        <view>{{mood}}</view>
+    <view>
+      <view wx:if="{{status === 'mood'}}" class="header">
+        <view>生活是一段旅程</view>
+        <view>并非每个人都会去同一个地方。</view>
       </view>
-      
-      <view wx:if="{{status === 'recieve-comfort'}}" class="textarea">
-        {{content}}
-      </view>
-      <textarea
-        wx:else
-        class="textarea"
-        auto-focus="{{status === 'mood'}}"
-        placeholder="写下回复···"
-        maxlength="140"
-        bindconfirm="onConfirm"
-        bindblur="onConfirm"></textarea>
-  
-      <view wx:if="{{status === 'recieve-comfort' && name}}" class="name">{{name}}</view>
+      <view class="rich">
+        <view wx:if="{{status !== 'mood'}}" class="mood" style="{{content ? 'color: #888' : ''}}">
+          <view>{{mood}}</view>
+        </view>
+        
+        <view wx:if="{{status === 'recieve-comfort'}}" class="textarea">
+          {{content}}
+        </view>
+        <textarea
+          wx:else
+          class="textarea"
+          auto-focus="{{status === 'mood'}}"
+          placeholder="{{status === 'mood' ? '写下你想说的···' : '写下回复，未来会有人收到它···'}}"
+          maxlength="140"
+          bindconfirm="onConfirm"
+          bindblur="onConfirm"></textarea>
+    
+        <view wx:if="{{status === 'recieve-comfort' && name}}" class="name">{{name}}</view>
 
-      <input
-        wx:if="{{status !== 'mood' && status !== 'recieve-comfort'}}"
-        class="name"
-        placeholder="匿名"
-        bindconfirm="onInputConfirm"
-        bindblur="onInputConfirm"></input>
+        <input
+          wx:if="{{status !== 'mood' && status !== 'recieve-comfort'}}"
+          class="name"
+          placeholder="匿名"
+          bindconfirm="onInputConfirm"
+          bindblur="onInputConfirm"></input>
+      </view>
     </view>
+    
   
     <view wx:if="{{status !== 'recieve-comfort' && content}}" class="plane-button" bindtap="send">
-      折成纸飞机
+      {{status === 'mood' ? '掷出纸飞机' : '寄回去'}}
     </view>
   </block>
 
-  <view class="test" bindtap="goToRecieveMood">摇一摇</view>
+  <view wx:if="{{shakeVisible}}" class="shake" bindtap="goToRecieveMood">
+    <image src="../../assets/images/shake.svg"></image>
+    <text>摇一摇，或许会收到别人的纸飞机</text>
+  </view>
 </view>

@@ -16,12 +16,20 @@ Page {
   position: relative;
 }
 
+.header {
+  margin-top: 60rpx;
+  color: #888;
+  font-size: 28rpx;
+  font-family: SourceHanSerifSC-Regular;
+  margin-left: 50rpx;
+}
+
 .rich {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   width: 630rpx;
-  height: 840rpx;
+  height: 60vh;
   margin-top: 60rpx;
   padding: 50rpx;
   background: #fff;
@@ -48,10 +56,20 @@ Page {
 }
 
 .plane-button {
-  margin-bottom: 308rpx;
+  margin-bottom: 15vh;
 }
 
-.test {
+.shake {
   position: absolute;
-  bottom: 0;
+  bottom: 10rpx;
+  color: #aaa;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+}
+
+.shake image {
+  width: 50rpx;
+  height: 50rpx;
+  margin-right: 10rpx;
 }

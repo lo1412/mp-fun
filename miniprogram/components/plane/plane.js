@@ -2,8 +2,8 @@
 
 const placeholders = {
   welcome: ['最近有什么烦恼吗？', '不如把心事写在纸上，折一架纸飞机也许纸飞机会给你答案', '写点什么'],
-  sending: ['纸飞机折好了！', '手势向右滑一滑，让纸飞机起飞吧'],
-  sended: ['纸飞机，飞啊飞', '还有多久才能飞回到你的手里呢'],
+  sending: ['纸飞机，飞啊飞', '还有多久才能飞回到你的手里呢'],
+  sended: ['纸飞机飞了回来', '上面好像写了字', '拆开看看'],
   'recieve-mood': ['收到了一架纸飞机！', '不知从哪儿飞来的纸飞机，上面好像写了字', '拆开看看']
 }
 
@@ -54,6 +54,10 @@ Component({
 
     goToComfort() {
       this.setStatus('comfort')
+    },
+
+    goToRecieveComfort() {
+      this.setStatus('recieve-comfort')
     },
 
     onTouchStart(e) {

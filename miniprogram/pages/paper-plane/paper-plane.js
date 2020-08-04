@@ -13,10 +13,11 @@ Page({
    * 页面的初始数据
    */
   data: {
-    // welcome mood sending recieve-comfort recieve-mood comfort sending sended
+    // welcome mood sending sended recieve-comfort recieve-mood comfort sending
     status: 'welcome',
     planeVisible: true,
-    mood: '生活是一段旅程并非每个人都会去同一个地方。',
+    shakeVisible: false,
+    mood: '生活是一段旅程\n并非每个人都会去同一个地方。',
     content: '',
     key: '',
     name: '',
@@ -86,10 +87,9 @@ Page({
   },
 
   goToRecieveMood() {
-    const { status, isSecond } = this.data
-    if (['welcome', 'recieve-mood'].includes(status)) return
-    if (isSecond && !['sended'].includes(status)) return
-    if (status === 'sended') {
+    const { shakeVisible, status } = this.data
+    if (!shakeVisible) return
+    if (status === 'recieve-comfort' || (status === 'sending' && this.from === 'comfort')) {
       // 直接设
       this.setStatus('recieve-mood')
     } else {
@@ -140,7 +140,9 @@ Page({
         return
       }
 
-      this.setStatus('sending')
+      if (status === 'mood') {
+        this.setStatus('sending')
+      }
 
       const key = await (status === 'mood' ? this.getKey(content) : recieve.key)
 
@@ -168,7 +170,7 @@ Page({
         key
       })
 
-      this.setStatus(status === 'mood' ? 'recieve-comfort' : 'sended')
+      this.setStatus(status === 'mood' ? 'sended' : 'sending')
     }, '发送失败')
   },
 
@@ -180,12 +182,15 @@ Page({
     }
 
     console.log('go to', status)
+
+    this.from = this.data.status
     
     return new Promise((resolve) => {
       setTimeout(() => {
         this.setData({
           status,
-          planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood'].includes(status)
+          planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood'].includes(status),
+          shakeVisible: !(['welcome', 'recieve-mood'].includes(status) || (this.data.isSecond && !['sended'].includes(status)))
         })
         resolve
       }, 0)
@@ -256,7 +261,7 @@ Page({
         COLLECTIONS.comfort,
         { key: _.eq(key) }
       )
-      
+
       if (res.list.length) {
         this.setRecieve(res.list[0], status)
       }
@@ -276,6 +281,7 @@ Page({
     } else {
       data.mood = recieve.content
       data.name = ''
+      data.content = ''
     }
     this.setData(data)
   },

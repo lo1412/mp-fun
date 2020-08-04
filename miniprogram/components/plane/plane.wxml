@@ -20,6 +20,13 @@
   </button>
 
   <button
+    wx:if="{{status === 'sended'}}"
+    class="plane-button"
+    bindtap="goToRecieveComfort">
+    {{placeholder[2]}}
+  </button>
+
+  <button
     wx:if="{{status === 'recieve-mood'}}"
     class="plane-button"
     bindtap="goToComfort">
