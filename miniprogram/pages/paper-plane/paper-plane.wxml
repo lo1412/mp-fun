@@ -7,11 +7,6 @@
     onGetUserInfo="{{onGetUserInfo}}"></plane>
 
   <block wx:else>
-    <view>
-      <view wx:if="{{status === 'mood'}}" class="header">
-        <view>生活是一段旅程</view>
-        <view>并非每个人都会去同一个地方。</view>
-      </view>
       <view class="rich">
         <view wx:if="{{status !== 'mood'}}" class="mood" style="{{content ? 'color: #888' : ''}}">
           <view>{{mood}}</view>
@@ -37,11 +32,14 @@
           placeholder="匿名"
           bindconfirm="onInputConfirm"
           bindblur="onInputConfirm"></input>
-      </view>
+
+        <view wx:if="{{status === 'mood'}}" class="mood-example" style="color: #888">
+          <view>{{mood}}</view>
+        </view>
     </view>
     
   
-    <view wx:if="{{status !== 'recieve-comfort' && content}}" class="plane-button" bindtap="send">
+    <view wx:if="{{status !== 'recieve-comfort' && content}}" class="plane-button" bindtap="goToPrepare">
       {{status === 'mood' ? '掷出纸飞机' : '寄回去'}}
     </view>
   </block>

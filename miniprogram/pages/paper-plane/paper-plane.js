@@ -13,7 +13,7 @@ Page({
    * 页面的初始数据
    */
   data: {
-    // welcome mood sending sended recieve-comfort recieve-mood comfort sending
+    // welcome mood prepare sending sended recieve-comfort recieve-mood comfort prepare sending
     status: 'welcome',
     planeVisible: true,
     shakeVisible: false,
@@ -130,21 +130,21 @@ Page({
     })
   },
 
+  goToPrepare() {
+    this.setStatus('prepare')
+  },
+
   send() {
-    const { status, content, userInfo, recieve, name } = this.data
+    const { content, userInfo, recieve, name } = this.data
     if (!content) return
     this.try(async () => {
-      const isValid = await this.isValid(content + (status === 'mood' ? '' : name))
+      const isValid = await this.isValid(content + (this.from === 'mood' ? '' : name))
       if (!isValid) {
         // todo 提示
         return
       }
 
-      if (status === 'mood') {
-        this.setStatus('sending')
-      }
-
-      const key = await (status === 'mood' ? this.getKey(content) : recieve.key)
+      const key = await (this.from === 'mood' ? this.getKey(content) : recieve.key)
 
       if (key) {
         const db = this.db
@@ -156,21 +156,21 @@ Page({
           name,
           content,
           send_time: Date.now(),
-          type: status,
+          type: this.from,
           key
         }
 
-        await db.collection(COLLECTIONS[status]).add({ data })
+        await db.collection(COLLECTIONS[this.from]).add({ data })
       }
       
 
       this.setData({
-        mood: status === 'mood' ? content : '',
+        mood: this.from === 'mood' ? content : '',
         content: '',
         key
       })
-
-      this.setStatus(status === 'mood' ? 'sended' : 'sending')
+      
+      this.from === 'mood' && this.setStatus('sended')
     }, '发送失败')
   },
 
@@ -183,18 +183,19 @@ Page({
 
     console.log('go to', status)
 
-    this.from = this.data.status
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        this.setData({
-          status,
-          planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood'].includes(status),
-          shakeVisible: !(['welcome', 'recieve-mood'].includes(status) || (this.data.isSecond && !['sended'].includes(status)))
-        })
-        resolve
-      }, 0)
+    if (this.data.status !== 'prepare') {
+      this.from = this.data.status
+    }
+
+    this.setData({
+      status,
+      planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood', 'prepare'].includes(status),
+      shakeVisible: !(['welcome', 'recieve-mood'].includes(status) || (this.data.isSecond && !['sended'].includes(status)))
     })
+
+    if (status === 'sending') {
+      this.send()
+    }
   },
 
   /**
