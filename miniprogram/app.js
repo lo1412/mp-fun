@@ -23,13 +23,5 @@ App({
     }
 
     this.globalData = {}
-
-    // wx.loadFontFace({
-    //   family: 'Bitstream Vera Serif Bold',
-    //   source: 'https://use.typekit.net/af/14981c/00000000000000003b9b465a/27/m?unicode=AAAI8wAAAAeNOFyE9s3tKS7kbg5GWNzZy_lOhCmt5m_e6JjkBEiK3HcE5ksUcw5J1ESt-Krk8QoJo2db2PMylo6oWoQ7YkRFTkyI5c1CFNL7kr65Bc9vF4pxExHRO32CoR_kEPERu-5_ha2ogvcUfdt6Zdl7763VeeIbUXBt5fH5H4G70WJ_8JGrrErRdGTjGRPpDKazGx7vgUQ32ceqbWJ7ts0hvKDfCGzj2O8-HwPchKleGXeAW0loB6Z3TlRTqxjdr4uwJu7DoKeW48s2CHW34NLmKWL9OsuQCTH0O_P0sZNXNpvL5MPX1wo_MYDz57zEdpZKitZaIt266KB-Zz_ntgcb90grz1Uuy5W-0RZj6gBhVKL_ZbdvqrEwbZQriyn0mAAC_E4&features=ALL&v=3',
-    //   complete(e) {
-    //     console.log(e)
-    //   }
-    // })
   }
 })

@@ -1,7 +1,9 @@
 <view class="paper-plane">
   <plane
     wx:if="{{planeVisible}}"
-    status="{{status}}" goTo="{{goTo}}"
+    status="{{status}}"
+    goTo="{{goTo}}"
+    send="{{send}}"
     style="flex: 1;"></plane>
 
   <block wx:else>
@@ -30,7 +32,7 @@
           <input
             class="name"
             placeholder="写下你的名字"
-            placeholder-style="color: #c5c5c5;"
+            placeholder-style="color: #c5c5c5; font-family: SourceHanSerifSC;"
             bindconfirm="onInputConfirm"
             bindinput="onInputConfirm"
             bindblur="onInputConfirm"></input>

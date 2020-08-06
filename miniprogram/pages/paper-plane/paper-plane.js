@@ -37,17 +37,14 @@ Page({
     this.setData({
       key: options.key || '',
       openId: options.openId || '',
-      name: options.name || '',
+      name: status === 'comfort' ? '' : (options.name || ''),
       mood: options.mood || '生活是一段旅程\n并非每个人都会去同一个地方。',
       content: options.content || '',
       status,
       planeVisible: ['welcome', 'sending', 'sended-mood', 'recieve-mood', 'prepare', 'sended-comfort'].includes(status),
       shakeVisible: status === 'recieve-comfort',
-      from: options.from || ''
+      from: options.from || '',
     })
-    if (status === 'sending') {
-      this.send()
-    }
     this.addListeners()
     this.try(async () => {
       if (!options.openId) {
@@ -55,7 +52,8 @@ Page({
       }
       this.db = wx.cloud.database({})
       this.setData({
-        goTo: this.goTo
+        goTo: this.goTo,
+        send: this.send
       })
       this.hasInited = true
     }, '初始化失败')

@@ -4,9 +4,19 @@
   height: 92rpx;
   background: #FF4E00;
   border-radius: 51rpx;
-  font-family: SourceHanSerifSC-Heavy;
   color: #fff;
   font-size: 38rpx;
   text-align: center;
   line-height: 92rpx;
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'SourceHanSerifSC';
+  /* src: url('https://7374-story-1252084802.tcb.qcloud.la/FZXSSK--GBK1-0.ttf?sign=f35945ebc043f98814f73913aa954f5f&t=1596718710'); */
+  src: url('https://7374-story-1252084802.tcb.qcloud.la/SourceHanSerifSC-Regular.otf?sign=d219547bc5411b986c4840fd90804d1d&t=1596719556');
+}
+
+Page {
+  font-family: SourceHanSerifSC;
 }

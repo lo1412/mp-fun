@@ -24,6 +24,9 @@ Component({
     goTo: {
       type: Function,
     },
+    send: {
+      type: Function,
+    },
   },
 
   /**
@@ -81,7 +84,7 @@ Component({
       if (this.s - this.e > 50 && Date.now() - this.t < 500) {
         this.setData({ sending: true })
         setTimeout(() => {
-          this.goTo('sending')
+          this.properties.send()
         }, 2000)
       }
     }

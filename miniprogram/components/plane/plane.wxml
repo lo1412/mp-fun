@@ -12,6 +12,11 @@
         src="../../assets/images/bg.svg"
         style="{{status !== 'prepare' ? '' : 'transform: scaleX(-1) scaleY(-1)'}}"
         class="prepare-animation"></image>
+      <image
+        wx:if="{{sending}}"
+        src="../../assets/images/bg.svg"
+        style="{{status !== 'prepare' ? '' : 'transform: scaleX(-1) scaleY(-1)'}}"
+        class="prepare-animation"></image>
     </view>
     
     <image

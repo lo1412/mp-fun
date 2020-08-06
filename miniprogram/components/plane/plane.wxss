@@ -27,7 +27,7 @@ button {
 }
 
 .plane-wrapper .plane-bg {
-  width: 440rpx;
+  /* width: 440rpx; */
   height: 350rpx;
   display: flex;
   flex-direction: row;
@@ -43,7 +43,6 @@ button {
 .plane-wrapper .plane-header {
   margin-top: 80rpx;
   font-size: 40rpx;
-  font-family: SourceHanSerifSC-SemiBold;
   line-height: 58rpx;
 }
 
@@ -53,7 +52,6 @@ button {
   color: #777;
   width: 512rpx;
   text-align: center;
-  font-family: SourceHanSerifSC-Regular;
   line-height: 52rpx;
 }
 
@@ -63,7 +61,6 @@ button {
   height: 92rpx;
   background: #FF4E00;
   border-radius: 51rpx;
-  font-family: SourceHanSerifSC-Heavy;
   color: #fff;
   font-size: 38rpx;
   text-align: center;

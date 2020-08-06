@@ -20,7 +20,6 @@ Page {
   margin-top: 60rpx;
   color: #888;
   font-size: 28rpx;
-  font-family: SourceHanSerifSC-Regular;
   margin-left: 50rpx;
 }
 
@@ -39,13 +38,11 @@ Page {
 }
 
 .mood {
-  font-family: SourceHanSerifSC-Regular;
   border-bottom: 1rpx #eee solid;
   padding-bottom: 40rpx;
 }
 
 .mood-example {
-  font-family: SourceHanSerifSC-Regular;
   border-top: 1rpx #eee solid;
   padding-top: 40rpx;
 }
