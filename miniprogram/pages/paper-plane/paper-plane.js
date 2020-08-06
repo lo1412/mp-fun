@@ -13,21 +13,16 @@ Page({
    * 页面的初始数据
    */
   data: {
-    // welcome mood prepare sending sended recieve-comfort recieve-mood comfort prepare sending
+    // welcome mood prepare sending sended-mood recieve-comfort recieve-mood comfort prepare sending sended-comfort
     status: 'welcome',
     planeVisible: true,
     shakeVisible: false,
-    mood: '生活是一段旅程\n并非每个人都会去同一个地方。',
+    mood: '',
     content: '',
     key: '',
     name: '',
-    avatarUrl: '',
-    userInfo: null,
     openId: '',
-    onGetUserInfo: null,
-    // 单独摇一摇的流程
-    isSecond: false,
-    recieve: {}
+    from: ''
   },
 
   /**
@@ -38,39 +33,30 @@ Page({
   },
 
   init: async function(options) {
-    // 获取用户信息
-    wx.getSetting({
-      success: res => {
-        if (res.authSetting['scope.userInfo']) {
-          // 已经授权，可以直接调用 getUserInfo 获取头像昵称，不会弹框
-          wx.getUserInfo({
-            success: res => {
-              this.setData({
-                avatarUrl: res.userInfo.avatarUrl,
-                userInfo: res.userInfo
-              })
-            }
-          })
-        }
-      }
-    })
-
+    const status = options.status || 'welcome'
     this.setData({
-      isSecond: !!options.second
+      key: options.key || '',
+      openId: options.openId || '',
+      name: options.name || '',
+      mood: options.mood || '生活是一段旅程\n并非每个人都会去同一个地方。',
+      content: options.content || '',
+      status,
+      planeVisible: ['welcome', 'sending', 'sended-mood', 'recieve-mood', 'prepare', 'sended-comfort'].includes(status),
+      shakeVisible: status === 'recieve-comfort',
+      from: options.from || ''
     })
-
-    this.setStatus(!!options.second ? 'recieve-mood' : 'welcome')
-
+    if (status === 'sending') {
+      this.send()
+    }
     this.addListeners()
-
     this.try(async () => {
-      await this.initOpenID()
+      if (!options.openId) {
+        await this.initOpenID()
+      }
       this.db = wx.cloud.database({})
       this.setData({
-        onGetUserInfo: this.onGetUserInfo,
-        setStatus: this.setStatus
+        goTo: this.goTo
       })
-
       this.hasInited = true
     }, '初始化失败')
   },
@@ -80,6 +66,7 @@ Page({
         if (this.ignore || x < 1 || y < 1) return
         this.ignore = true
         this.goToRecieveMood()
+        wx.vibrateShort()
         setTimeout(() => {
           this.ignore = false
         }, 1000)
@@ -87,115 +74,77 @@ Page({
   },
 
   goToRecieveMood() {
-    const { shakeVisible, status } = this.data
-    if (!shakeVisible) return
-    if (status === 'recieve-comfort' || (status === 'sending' && this.from === 'comfort')) {
-      // 直接设
-      this.setStatus('recieve-mood')
-    } else {
-      wx.navigateTo({
-        url: '/pages/paper-plane/paper-plane?second=1',
-      })
-    }
+    if (!this.data.shakeVisible) return
+    this.goTo('recieve-mood')
   },
 
   initOpenID: async function() {
-    const { result } = await wx.cloud.callFunction({
-      name: 'login',
-    })
-
-    this.setData({
-      openId: result.openid
-    })
-  },
-
-  onGetUserInfo: function(e) {
-    if (e.detail.userInfo) {
-      this.setData({
-        avatarUrl: e.detail.userInfo.avatarUrl,
-        userInfo: e.detail.userInfo
-      })
-    }
+    const { result } = await wx.cloud.callFunction({ name: 'login', })
+    this.setData({ openId: result.openid })
   },
 
   onConfirm(e) {
-    this.setData({
-      content: e.detail.value.trim()
-    })
+    this.setData({ content: e.detail.value.trim() })
   },
 
   onInputConfirm(e) {
-    this.setData({
-      name: e.detail.value.trim()
-    })
+    this.setData({ name: e.detail.value.trim() })
   },
 
   goToPrepare() {
-    this.setStatus('prepare')
+    if (!this.data.content) return
+    this.goTo('prepare')
   },
 
   send() {
-    const { content, userInfo, recieve, name } = this.data
+    let { content, name, key, from } = this.data
     if (!content) return
     this.try(async () => {
-      const isValid = await this.isValid(content + (this.from === 'mood' ? '' : name))
-      if (!isValid) {
-        // todo 提示
-        return
+      const isValid = await this.isValid(content + (from === 'mood' ? '' : name))
+      if (!isValid) return
+      if (from === 'mood') {
+        key = await this.getKey(content)
       }
-
-      const key = await (this.from === 'mood' ? this.getKey(content) : recieve.key)
-
       if (key) {
         const db = this.db
         const _ = db.command
-
         const data = {
           _id: getRandomId(),
-          user_info: userInfo,
           name,
           content,
           send_time: Date.now(),
-          type: this.from,
+          type: from,
           key
         }
-
-        await db.collection(COLLECTIONS[this.from]).add({ data })
+        await db.collection(COLLECTIONS[from]).add({ data })
       }
-      
-
       this.setData({
-        mood: this.from === 'mood' ? content : '',
+        mood: from === 'mood' ? content : '',
         content: '',
         key
       })
-      
-      this.from === 'mood' && this.setStatus('sended')
+      this.goTo(from === 'mood' ? 'sended-mood' : 'sended-comfort')
     }, '发送失败')
   },
 
-  async setStatus(status) {
-    if (!this.data.isSecond && (!this.hasInited || !this.data.openId || !this.data.userInfo)) return
-
+  async goTo(status) {
+    if (!this.hasInited || !this.data.openId) return
     if (['recieve-comfort', 'comfort'].includes(status)) {
       await this.pull(status)
     }
-
-    console.log('go to', status)
-
-    if (this.data.status !== 'prepare') {
-      this.from = this.data.status
-    }
-
-    this.setData({
-      status,
-      planeVisible: ['welcome', 'sending', 'sended', 'recieve-mood', 'prepare'].includes(status),
-      shakeVisible: !(['welcome', 'recieve-mood'].includes(status) || (this.data.isSecond && !['sended'].includes(status)))
+    const query = ['openId', 'status', 'key', 'mood', 'content', 'name', 'from'].reduce((r, key, i) => {
+      let value = this.data[key]
+      if (key === 'status') {
+        value = status
+      }
+      if (key === 'from') {
+        value = this.data.status !== 'prepare' ? this.data.status : this.data.from
+      }
+      return r + (i ? '&' : '?') + key + '=' + value
+    }, '')
+    wx[getCurrentPages().length > 1 ? 'redirectTo' : 'navigateTo']({
+      url: '/pages/paper-plane/paper-plane' + query,
     })
-
-    if (status === 'sending') {
-      this.send()
-    }
   },
 
   /**
@@ -217,19 +166,18 @@ Page({
   },
 
   async bot() {
-    console.log('bot')
     const db = this.db
     const _ = db.command
     const { list } = await this.aggregate(COLLECTIONS.commonReply)
     let answer = '别沮丧，生活就像心电图，一帆风顺就证明你挂了。'
-    let recieve = {
+    const recieve = {
       name: '一位热心群众',
       content: answer
     }
     if (list.length > 0 && list[0]) {
       recieve.content = list[0].content || answer
     }
-    this.setRecieve(recieve, 'recieve-comfort')
+    this.onRecieve(recieve, 'recieve-comfort')
   },
 
   async pull(status) {
@@ -240,47 +188,35 @@ Page({
     // 拉一条
     if (status === 'recieve-comfort') {
       // 拉取安抚自己最近mood的comfort
-
       // 直接命中
       let res = await this.aggregate(
         COLLECTIONS.comfort,
         { content: _.eq(mood) }
       )
-      
-      if (res.list.length) {
-        this.setRecieve(res.list[0], status)
-        return
-      }
-
+      if (res.list.length) return this.onRecieve(res.list[0], status)
       // 没有直接命中，根据key找
-      if (!key) {
-        // 全部未命中
-        this.bot()
-        return
-      }  
+      if (!key) return this.bot()
       res = await this.aggregate(
         COLLECTIONS.comfort,
         { key: _.eq(key) }
       )
-
-      if (res.list.length) {
-        this.setRecieve(res.list[0], status)
-      }
+      if (res.list.length) return this.onRecieve(res.list[0], status)
     } else {
       // 随便拉mood
       const { list } = await this.aggregate(COLLECTIONS.mood)
       if (!list.length) return
-      this.setRecieve(list[0], status)
+      this.onRecieve(list[0], status)
     }
   },
 
-  setRecieve(recieve, status) {
-    const data = { recieve }
+  onRecieve(recieve, status) {
+    const data = {}
     if (status === 'recieve-comfort') {
       data.name = recieve.name
       data.content = recieve.content
     } else {
       data.mood = recieve.content
+      data.key = recieve.key
       data.name = ''
       data.content = ''
     }
@@ -296,7 +232,6 @@ Page({
   },
 
   showError(title, content, confirmText, confirmCallback) {
-    console.error(title, content)
     wx.showModal({
       title,
       content: content.toString(),

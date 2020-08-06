@@ -2,9 +2,23 @@
   <!-- <image src="../../assets/images/bg.svg"></image> -->
   <!-- <image src="../../assets/images/p1.svg"></image> -->
   <view class="plane-wrapper">
-    <image class="plane-bg" src="../../assets/images/bg.svg" style="{{status !== 'prepare' ? '' : 'transform: scaleX(-1) scaleY(-1)'}}"></image>
-    <image wx:if="{{status !== 'prepare'}}" class="plane-icon" src="../../assets/images/p2.svg"></image>
-    <image wx:else class="plane-icon" src="../../assets/images/p1.svg"></image>
+    <view class="plane-bg">
+      <image
+        src="../../assets/images/bg.svg"
+        style="{{status !== 'prepare' ? '' : 'transform: scaleX(-1) scaleY(-1)'}}"
+        class="{{sending ? 'prepare-animation' : ''}}"></image>
+      <image
+        wx:if="{{sending}}"
+        src="../../assets/images/bg.svg"
+        style="{{status !== 'prepare' ? '' : 'transform: scaleX(-1) scaleY(-1)'}}"
+        class="prepare-animation"></image>
+    </view>
+    
+    <image
+      wx:if="{{status !== 'prepare' && status !== 'sended-comfort'}}"
+      class="{{'plane-icon' + (status === 'sending' ? ' sending-animation' : '')}}"
+      src="../../assets/images/p2.svg"></image>
+    <image wx:if="{{status === 'prepare'}}" class="plane-icon" src="../../assets/images/p1.svg"></image>
 
     <text class="plane-header">{{placeholder[0]}}</text>
 
@@ -13,14 +27,13 @@
 
   <button
     wx:if="{{status === 'welcome'}}"
-    open-type="getUserInfo" 
-    bindgetuserinfo="onGetUserInfo"
+    bindtap="toToMood"
     class="plane-button">
     {{placeholder[2]}}
   </button>
 
   <button
-    wx:if="{{status === 'sended'}}"
+    wx:if="{{status === 'sended-mood'}}"
     class="plane-button"
     bindtap="goToRecieveComfort">
     {{placeholder[2]}}
@@ -30,6 +43,13 @@
     wx:if="{{status === 'recieve-mood'}}"
     class="plane-button"
     bindtap="goToComfort">
+    {{placeholder[2]}}
+  </button>
+
+  <button
+    wx:if="{{status === 'sended-comfort'}}"
+    class="plane-button"
+    bindtap="goToRecieveMood">
     {{placeholder[2]}}
   </button>
 </view>

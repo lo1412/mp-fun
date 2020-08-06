@@ -1,10 +1,8 @@
 <view class="paper-plane">
   <plane
     wx:if="{{planeVisible}}"
-    status="{{status}}" setStatus="{{setStatus}}"
-    style="flex: 1;"
-    userInfo="{{userInfo}}"
-    onGetUserInfo="{{onGetUserInfo}}"></plane>
+    status="{{status}}" goTo="{{goTo}}"
+    style="flex: 1;"></plane>
 
   <block wx:else>
       <view class="rich">
@@ -18,7 +16,6 @@
         <textarea
           wx:else
           class="textarea"
-          auto-focus="{{status === 'mood'}}"
           placeholder="{{status === 'mood' ? '写下你想说的···' : '写下回复，未来会有人收到它···'}}"
           maxlength="140"
           bindconfirm="onConfirm"
@@ -26,21 +23,27 @@
     
         <view wx:if="{{status === 'recieve-comfort' && name}}" class="name">{{name}}</view>
 
-        <input
-          wx:if="{{status !== 'mood' && status !== 'recieve-comfort'}}"
-          class="name"
-          placeholder="匿名"
-          bindconfirm="onInputConfirm"
-          bindblur="onInputConfirm"></input>
-
+        <view class="name-wrapper" wx:if="{{status !== 'mood' && status !== 'recieve-comfort'}}">
+          <view wx:if="{{!name}}" class="fake-name">
+            <text>{{name || '写下你的名字'}}</text>
+          </view>
+          <input
+            class="name"
+            placeholder="写下你的名字"
+            placeholder-style="color: #c5c5c5;"
+            bindconfirm="onInputConfirm"
+            bindinput="onInputConfirm"
+            bindblur="onInputConfirm"></input>
+        </view>
+        
         <view wx:if="{{status === 'mood'}}" class="mood-example" style="color: #888">
           <view>{{mood}}</view>
         </view>
     </view>
     
   
-    <view wx:if="{{status !== 'recieve-comfort' && content}}" class="plane-button" bindtap="goToPrepare">
-      {{status === 'mood' ? '掷出纸飞机' : '寄回去'}}
+    <view wx:if="{{status !== 'recieve-comfort'}}" class="plane-button" bindtap="goToPrepare">
+      {{status === 'mood' ? '折成纸飞机' : '寄回去'}}
     </view>
   </block>
 

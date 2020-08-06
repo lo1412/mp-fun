@@ -55,6 +55,23 @@ Page {
   margin-top: 30rpx;
 }
 
+.name-wrapper {
+  position: relative;
+}
+
+.fake-name {
+  position: absolute;
+  width: 100%;
+  top: 30rpx;
+  text-align: right;
+  color: transparent;
+}
+
+.fake-name text {
+  padding-bottom: 5rpx;
+  border-bottom: 1rpx #c5c5c5 dashed;
+}
+
 .textarea {
   width: 100%;
   flex: 1;

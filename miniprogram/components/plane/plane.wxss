@@ -21,15 +21,23 @@ button {
 }
 
 .plane-wrapper .plane-icon {
+  position: absolute;
   width: 360rpx;
   height: 360rpx;
 }
 
 .plane-wrapper .plane-bg {
-  position: absolute;
   width: 440rpx;
   height: 350rpx;
-  z-index: -1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.plane-wrapper .plane-bg image {
+  width: 440rpx;
+  height: 350rpx;
+  flex-shrink: 0;
 }
 
 .plane-wrapper .plane-header {
@@ -60,4 +68,34 @@ button {
   font-size: 38rpx;
   text-align: center;
   line-height: 92rpx;
+}
+
+.prepare-animation {
+  animation: prepare-animation 1s infinite linear;
+}
+
+@keyframes prepare-animation {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.sending-animation {
+  opacity: 0;
+  animation: sending-animation 2s ease-in;
+}
+
+@keyframes sending-animation {
+  from {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(100%, -100%);
+  }
 }
