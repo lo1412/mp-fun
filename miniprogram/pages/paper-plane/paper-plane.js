@@ -38,7 +38,7 @@ Page({
       key: options.key || '',
       openId: options.openId || '',
       name: status === 'comfort' ? '' : (options.name || ''),
-      mood: options.mood || '生活是一段旅程\n并非每个人都会去同一个地方。',
+      mood: options.mood || '生活是一段旅程，并非每个人都会去同一个地方。',
       content: options.content || '',
       status,
       planeVisible: ['welcome', 'sending', 'sended-mood', 'recieve-mood', 'prepare', 'sended-comfort'].includes(status),

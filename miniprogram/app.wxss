@@ -8,7 +8,7 @@
   font-size: 38rpx;
   text-align: center;
   line-height: 92rpx;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 @font-face {

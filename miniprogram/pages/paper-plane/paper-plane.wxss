@@ -4,6 +4,7 @@ Page {
   box-sizing: border-box;
   height: 100%;
   padding-bottom: env(safe-area-inset-bottom);
+  font-weight: 100;
 }
 
 .paper-plane {
@@ -77,6 +78,7 @@ Page {
 
 .plane-button {
   margin-bottom: 15vh;
+  font-weight: 700;
 }
 
 .shake {

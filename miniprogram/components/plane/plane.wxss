@@ -27,11 +27,9 @@ button {
 }
 
 .plane-wrapper .plane-bg {
-  /* width: 440rpx; */
+  width: 440rpx;
   height: 350rpx;
-  display: flex;
-  flex-direction: row;
-  overflow: hidden;
+  position: relative;
 }
 
 .plane-wrapper .plane-bg image {
@@ -44,6 +42,7 @@ button {
   margin-top: 80rpx;
   font-size: 40rpx;
   line-height: 58rpx;
+  font-weight: 700;
 }
 
 .plane-wrapper .plane-tips {
@@ -65,6 +64,7 @@ button {
   font-size: 38rpx;
   text-align: center;
   line-height: 92rpx;
+  font-weight: 700;
 }
 
 .prepare-animation {
@@ -73,11 +73,53 @@ button {
 
 @keyframes prepare-animation {
   from {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translateX(0) scaleX(-1) scaleY(-1);
   }
 
   to {
-    transform: translateX(-100%);
+    opacity: 0;
+    transform: translateX(-100%) scaleX(-1) scaleY(-1);
+  }
+}
+
+.prepare-animation1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: prepare-animation1 1s infinite linear;
+  transform: translateX(-100%) scaleX(-1) scaleY(-1);
+}
+
+@keyframes prepare-animation1 {
+  from {
+    opacity: 0;
+    transform: translateX(-100%) scaleX(-1) scaleY(-1);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-200%) scaleX(-1) scaleY(-1);
+  }
+}
+
+.prepare-animation2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: prepare-animation2 1s infinite linear;
+  transform: translateX(100%) scaleX(-1) scaleY(-1);
+}
+
+@keyframes prepare-animation2 {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scaleX(-1) scaleY(-1);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scaleX(-1) scaleY(-1);
   }
 }
 
