@@ -54,7 +54,7 @@
   <button
     wx:if="{{status === 'sended-comfort'}}"
     class="plane-button"
-    bindtap="goToRecieveMood">
+    bindtap="goToWelcome">
     {{placeholder[2]}}
   </button>
 </view>

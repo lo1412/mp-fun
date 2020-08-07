@@ -83,15 +83,14 @@ Page {
 
 .shake {
   position: absolute;
-  bottom: 10rpx;
+  bottom: 102rpx;
   color: #aaa;
-  font-size: 26rpx;
-  display: flex;
-  align-items: center;
+  font-size: 28rpx;
+  text-align: center;
 }
 
 .shake image {
-  width: 50rpx;
-  height: 50rpx;
-  margin-right: 10rpx;
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 30rpx;
 }

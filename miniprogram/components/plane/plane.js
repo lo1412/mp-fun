@@ -61,8 +61,8 @@ Component({
       this.goTo('recieve-comfort')
     },
 
-    goToRecieveMood() {
-      this.goTo('recieve-mood')
+    goToWelcome() {
+      this.goTo('welcome')
     },
 
     onTouchStart(e) {

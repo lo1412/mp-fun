@@ -51,6 +51,6 @@
 
   <view wx:if="{{shakeVisible}}" class="shake" bindtap="goToRecieveMood">
     <image src="../../assets/images/shake.svg"></image>
-    <text>摇一摇，或许会收到别人的纸飞机</text>
+    <view>摇一摇，或许会收到别人的纸飞机</view>
   </view>
 </view>
