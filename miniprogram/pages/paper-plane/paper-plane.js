@@ -7,7 +7,7 @@ const COLLECTIONS = {
   commonReply: 'common_reply'
 }
 const getRandomId = () => `${Math.random()}_${Date.now()}`
-
+let isDirtyWord = false
 Page({
   /**
    * 页面的初始数据
@@ -89,21 +89,31 @@ Page({
     this.setData({ name: e.detail.value.trim() })
   },
 
-  goToPrepare() {
-    if (!this.data.content) return
+  async goToPrepare() {
+    let { content, name, from } = this.data
+    if (!content) return
+    const { isValid, isDirty } = await this.isValid(content + ',' + (from === 'mood' ? '' : name))
+    if (!isValid || isDirty) {
+      const title = !isValid ? '很遗憾，纸飞机上也不能写敏感词汇...' : '世界如此美妙我却如此暴躁这样不好，不好'
+      wx.showToast({
+        title: title,
+        icon: 'none'
+      })
+      return
+    }
+    isDirtyWord = isDirty;
     this.goTo('prepare')
   },
 
   send() {
     let { content, name, key, from } = this.data
+   
     if (!content) return
     this.try(async () => {
-      const isValid = await this.isValid(content + (from === 'mood' ? '' : name))
-      if (!isValid) return
       if (from === 'mood') {
         key = await this.getKey(content)
       }
-      if (key) {
+      if (key && !isDirtyWord) {
         const db = this.db
         const _ = db.command
         const data = {

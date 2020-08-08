@@ -103,35 +103,50 @@ function getAnswer(openid, query) {
 
 function checkMsgValid(query) {
    return new Promise((resolve, reject) => {
-      // plugin.api.nlp('sensitive', {q: query, mode: 'cnn'}).then(res => {
-      //   console.log("sensitive result : ", res)
-      //   resolve(false)
-      // }).catch(err => {
-      //   reject(err)
-      // })
-      wx.cloud.callFunction({
-        // 云函数名称
-        name: 'msgSecCheck',
-        // 传给云函数的参数
-        data: {
-          content: query
-        },
-      })
-      .then(res => {
-        console.log('res', res.result)
-        resolve(res.result)
-      })
-      .catch(err => {
+      plugin.api.nlp('sensitive', {q: query, mode: 'cnn'}).then(res => {
+        console.log("sensitive result : ", res)
+        const result = res.result
+        const map = {
+          dirty_politics: 0,
+          dirty_porno: 0,
+          dirty_curse: 0,
+          other: 0
+        }
+        if(Array.isArray(result)) {
+          result.forEach(elem => {
+            map[elem[0]] = elem[1]
+          })
+        }
+        // 脏话可以通过
+        const isValid = !(map.dirty_politics + map.dirty_porno > 0.5)
+        resolve({
+          isDirty: map.dirty_curse > 0,
+          isValid: isValid
+        })
+      }).catch(err => {
         reject(err)
       })
+      // wx.cloud.callFunction({
+      //   // 云函数名称
+      //   name: 'msgSecCheck',
+      //   // 传给云函数的参数
+      //   data: {
+      //     content: query
+      //   },
+      // })
+      // .then(res => {
+      //   console.log('res', res.result)
+      //   resolve(res.result)
+      // })
+      // .catch(err => {
+      //   reject(err)
+      // })
    })
-    
 }
 
 function commonAnswer() {
 
 }
-
 module.exports = {
   getAnswer,
   getKeyword,

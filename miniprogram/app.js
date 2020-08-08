@@ -14,12 +14,12 @@ App({
         // env: 'my-env-id',
         traceUser: true,
       })
-      // plugin.init({
-      //   appid: "ZOEpihPZqN14CK2CScmPzciwl96gEC",
-      //   openid: "", //用户的openid，非必填，建议传递该参数
-      //   success: () => {}, //非必填
-      //   fail: (error) => {}, //非必填
-      // })
+      plugin.init({
+        appid: "ZOEpihPZqN14CK2CScmPzciwl96gEC",
+        openid: "0", //用户的openid，非必填，建议传递该参数
+        success: () => {}, //非必填
+        fail: (error) => {}, //非必填
+      })
     }
 
     this.globalData = {}
