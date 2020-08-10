@@ -61,10 +61,10 @@ Page({
 
   addListeners() {
     wx.onAccelerometerChange(({x, y, z}) => {
-        if (this.ignore || x < 1 || y < 1) return
+        if (!this.data.shakeVisible || this.ignore || (x < 1 && y < 0.9)) return
         this.ignore = true
         this.goToRecieveMood()
-        wx.vibrateShort()
+        wx.vibrateLong()
         setTimeout(() => {
           this.ignore = false
         }, 1000)
@@ -101,7 +101,6 @@ Page({
       })
       return
     }
-    isDirtyWord = isDirty;
     this.goTo('prepare')
   },
 
@@ -113,7 +112,7 @@ Page({
       if (from === 'mood') {
         key = await this.getKey(content)
       }
-      if (key && !isDirtyWord) {
+      if (key) {
         const db = this.db
         const _ = db.command
         const data = {
